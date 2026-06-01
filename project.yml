@@ -1,0 +1,29 @@
+name: beatmch
+options:
+  bundleIdPrefix: agu
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  beatmch:
+    type: application
+    platform: iOS
+    sources:
+      - beatmch
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: beatmch
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: agu.beatmch
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: 1
