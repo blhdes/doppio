@@ -23,6 +23,7 @@ struct Palette: Equatable {
     let prefersDarkUI: Bool
 
     init(accent: Color, mesh: [Color]) {
+        assert(mesh.count == 9, "A Palette mesh needs exactly 9 colours for the 3×3 MeshGradient; got \(mesh.count).")
         self.accent = accent
         self.mesh = mesh
         let plan = ThemeContrast.plan(for: mesh)

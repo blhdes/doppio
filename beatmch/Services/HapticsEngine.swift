@@ -5,6 +5,10 @@ import UIKit
 /// We keep the generators "primed" with `prepare()` so the buzz fires with no
 /// delay even during a fast swipe. Haptics only play on a real device — on the
 /// Simulator these calls simply do nothing (which is safe).
+///
+/// `@MainActor`-isolated because `UIFeedbackGenerator` must be driven from the main
+/// thread; it already is today, this makes that a compiler-enforced guarantee.
+@MainActor
 final class HapticsEngine {
 
     private let selection = UISelectionFeedbackGenerator()

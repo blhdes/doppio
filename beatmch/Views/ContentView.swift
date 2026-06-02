@@ -206,11 +206,15 @@ struct ContentView: View {
         let active = events.filter { $0.phase == .active }
         let byID = Dictionary(active.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
-        // Remember where each finger landed; forget any that have lifted.
-        landingY = landingY.filter { byID[$0.key] != nil }
+        // Remember where each finger landed; forget any that have lifted. Both writes are gated
+        // so a steady drag (no finger added or lifted) doesn't reassign @State every tick — with
+        // setBPM also guarded, body then re-evaluates only when the BPM moves, not per touch event.
+        if landingY.contains(where: { byID[$0.key] == nil }) {
+            landingY = landingY.filter { byID[$0.key] != nil }
+        }
         for event in active where landingY[event.id] == nil { landingY[event.id] = event.location.y }
         guard !active.isEmpty else { return }
-        maxTouches = max(maxTouches, active.count)
+        if active.count > maxTouches { maxTouches = active.count }
 
         // A second finger anywhere means fine mode — it only slows the swipe, never steers.
         let fine = active.count >= 2

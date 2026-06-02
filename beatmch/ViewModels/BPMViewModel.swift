@@ -51,7 +51,9 @@ final class BPMViewModel {
     /// Set the BPM, clamped to the allowed range and rounded to one decimal place.
     func setBPM(_ value: Double) {
         let clamped = min(max(value, minBPM), maxBPM)
-        bpm = (clamped * 10).rounded() / 10
+        let rounded = (clamped * 10).rounded() / 10
+        guard rounded != bpm else { return }   // skip redundant notify + persist during in-step finger jitter
+        bpm = rounded
     }
 
     /// Flip between half-time and double-time.

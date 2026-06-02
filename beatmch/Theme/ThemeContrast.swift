@@ -68,11 +68,18 @@ enum ThemeContrast {
 
     /// WCAG relative luminance (0 = black … 1 = white) of a colour in sRGB.
     static func luminance(_ color: Color) -> Double {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
         func linear(_ c: CGFloat) -> Double {
             let v = Double(c)
             return v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+        }
+        let ui = UIColor(color)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard ui.getRed(&r, green: &g, blue: &b, alpha: &a) else {
+            // Non-RGB colour (pattern/dynamic): fall back to its grayscale brightness rather
+            // than silently reading 0 and mis-picking ink. Harmless for today's sRGB meshes.
+            var white: CGFloat = 0
+            ui.getWhite(&white, alpha: &a)
+            return linear(white)
         }
         return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
     }
