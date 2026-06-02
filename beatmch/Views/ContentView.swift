@@ -115,20 +115,21 @@ struct ContentView: View {
 
     private var hint: some View {
         VStack(spacing: 4) {
-            Group {
-                if isFineMode {
-                    Text("FINE  ·  0.1 BPM steps")
-                        .font(.footnote.weight(.bold))
-                        .tracking(2)
-                        .foregroundStyle(accent)   // pops so you know slow mode is on
-                } else {
-                    VStack(spacing: 4) {
-                        Text("Swipe ↕ to set BPM   ·   Tap to flip")
-                        Text("Hold a 2nd finger to fine-tune (0.1)")
-                    }
+            // Both messages always occupy their space; fine mode just cross-fades between
+            // them (opacity, not insert/remove) so the bottom text never shifts the layout.
+            ZStack {
+                VStack(spacing: 4) {
+                    Text("Swipe ↕ to set BPM   ·   Tap to flip")
+                    Text("Hold a 2nd finger to fine-tune (0.1)")
                 }
+                .opacity(isFineMode ? 0 : 1)
+
+                Text("FINE  ·  0.1 BPM steps")
+                    .font(.footnote.weight(.bold))
+                    .tracking(2)
+                    .foregroundStyle(accent)   // pops so you know slow mode is on
+                    .opacity(isFineMode ? 1 : 0)
             }
-            .transition(.opacity)
 
             Text("Shake to change the theme   ·   \(theme.name)")
                 .contentTransition(.opacity)   // the name fades as you shake to a new one
