@@ -20,6 +20,7 @@ targets:
       properties:
         CFBundleDisplayName: beatmch
         UILaunchScreen: {}
+        UIStatusBarHidden: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
     settings:
@@ -27,3 +28,5 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: agu.beatmch
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: 1
+        DEVELOPMENT_TEAM: 56BK7T2JG7
+        CODE_SIGN_STYLE: Automatic

@@ -35,6 +35,17 @@ struct ContentView: View {
     /// True while a second finger is held — the swipe moves ~10× slower.
     @State private var isFineMode = false
 
+    // MARK: Hint visibility
+    //
+    // The bottom hint is a first-run teacher, not permanent chrome. It fades out the
+    // instant you touch the screen so nothing competes with the number while you work,
+    // then drifts back only after the screen has sat quiet for a while.
+
+    /// Whether the bottom hint is currently shown.
+    @State private var showHint = true
+    /// Pending "bring the hint back" job — cancelled and restarted on every interaction.
+    @State private var hintReveal: Task<Void, Never>?
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Points of vertical drag that equal 1 BPM in normal mode. Lower = more sensitive.
@@ -43,6 +54,8 @@ struct ContentView: View {
     private let finePointsPerBPM: CGFloat = 70
     /// Movement needed before a touch counts as a swipe — keeps tap-to-flip alive.
     private let dragDeadZone: CGFloat = 8
+    /// How long the screen must stay untouched before the hint drifts back in.
+    private let hintIdleDelay: Duration = .seconds(45)
 
     var body: some View {
         ZStack {
@@ -74,6 +87,7 @@ struct ContentView: View {
                 .allowsHitTesting(false)        // purely visual — never blocks the swipe
         }
         .preferredColorScheme(palette.prefersDarkUI ? .dark : .light)
+        .statusBarHidden(true)          // zero distractions — no clock, no battery
         .background(ShakeDetector(onShake: shuffleTheme))
         .onAppear { haptics.prepare() }
     }
@@ -99,44 +113,65 @@ struct ContentView: View {
     }
 
     /// The tempo you dialled in — the "from X BPM" half of the relationship.
+    ///
+    /// At rest the number stays small so the *result* up top is the hero. The moment
+    /// you start swiping it swells, tints to the accent, and lifts onto a faint glass
+    /// capsule so the value you're setting is easy to read mid-drag; then it settles back
+    /// down when you let go. The row keeps a constant, generous height so the swelling
+    /// number grows in place — and `zIndex` keeps it above the orb's pulsing rings, which
+    /// render beyond their frame and would otherwise clip its top.
     private var sourceLine: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text("from")
                 .foregroundStyle(ink.opacity(0.6))
             Text(Self.format(vm.bpm))
+                .font(.system(size: isDragging ? 46 : 18, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(ink.opacity(0.9))
+                .foregroundStyle(isDragging ? accent : ink.opacity(0.9))
                 .contentTransition(.numericText(value: vm.bpm))
             Text("BPM")
                 .foregroundStyle(ink.opacity(0.6))
         }
         .font(.system(size: 18, weight: .medium, design: .rounded))
+        .padding(.horizontal, isDragging ? 22 : 0)
+        .padding(.vertical, isDragging ? 9 : 0)
+        .background {
+            // Faint accent glass, only while dragging — fades via opacity so it never pops.
+            Color.clear
+                .glassSurface(in: Capsule(), tint: accent)
+                .opacity(isDragging ? 1 : 0)
+        }
+        .frame(height: 76)   // generous constant band: no orb shift, room for the capsule
+        .zIndex(1)           // stay above the orb's pulse, which draws past its own frame
+        .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
 
     private var hint: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             // Both messages always occupy their space; fine mode just cross-fades between
             // them (opacity, not insert/remove) so the bottom text never shifts the layout.
             ZStack {
                 VStack(spacing: 4) {
-                    Text("Swipe ↕ to set BPM   ·   Tap to flip")
-                    Text("Hold a 2nd finger to fine-tune (0.1)")
+                    Text("Swipe up or down to set the tempo")
+                    Text("Tap to flip ×2 / ×½")
+                    Text("Hold a second finger to fine-tune")
                 }
                 .opacity(isFineMode ? 0 : 1)
 
-                Text("FINE  ·  0.1 BPM steps")
+                Text("Fine-tuning  ·  0.1 BPM steps")
                     .font(.footnote.weight(.bold))
                     .tracking(2)
                     .foregroundStyle(accent)   // pops so you know slow mode is on
                     .opacity(isFineMode ? 1 : 0)
             }
 
-            Text("Shake to change the theme   ·   \(theme.name)")
+            Text("Shake to change the theme  ·  \(theme.name)")
                 .contentTransition(.opacity)   // the name fades as you shake to a new one
         }
         .font(.footnote)
         .foregroundStyle(ink.opacity(0.6))
         .padding(.bottom, 8)
+        .opacity(showHint ? 1 : 0)             // fades away the moment you start playing
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isFineMode)
     }
 
@@ -188,6 +223,27 @@ struct ContentView: View {
         }
         UserDefaults.standard.set(next.id, forKey: Self.themeKey)
         haptics.shuffle()
+        dismissHint()          // a shake is interaction too — hide, then re-arm the timer
+        scheduleHintReveal()
+    }
+
+    // MARK: - Hint timing
+
+    /// Hide the hint the instant the user does anything — keeps the screen calm mid-task.
+    private func dismissHint() {
+        hintReveal?.cancel()
+        guard showHint else { return }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { showHint = false }
+    }
+
+    /// Bring the hint back, but only after the screen stays untouched for `hintIdleDelay`.
+    /// Any new interaction cancels this and starts the wait over.
+    private func scheduleHintReveal() {
+        hintReveal?.cancel()
+        hintReveal = Task { @MainActor in
+            do { try await Task.sleep(for: hintIdleDelay) } catch { return }
+            withAnimation(reduceMotion ? nil : .easeIn(duration: 0.6)) { showHint = true }
+        }
     }
 
     // MARK: - Gesture
@@ -214,6 +270,7 @@ struct ContentView: View {
         }
         for event in active where landingY[event.id] == nil { landingY[event.id] = event.location.y }
         guard !active.isEmpty else { return }
+        dismissHint()   // any touch means "I'm working" — clear the instructions
         if active.count > maxTouches { maxTouches = active.count }
 
         // A second finger anywhere means fine mode — it only slows the swipe, never steers.
@@ -284,6 +341,7 @@ struct ContentView: View {
         isDragging = false
         isFineMode = false
         maxTouches = 0
+        scheduleHintReveal()   // start the quiet-time countdown that brings the hint back
     }
 
     /// Which "notch" a BPM sits on: whole numbers normally, tenths in fine mode.
