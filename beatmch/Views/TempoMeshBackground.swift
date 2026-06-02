@@ -6,6 +6,9 @@ import SwiftUI
 /// when you flip. The drift is gentle (one wandering centre point); under Reduce
 /// Motion the whole thing freezes to a single static frame.
 struct TempoMeshBackground: View {
+    /// The active theme — supplies both the HALF and DOUBLE mesh palettes so the
+    /// flip can crossfade between them.
+    let theme: Theme
     let isDoubling: Bool
     let reduceMotion: Bool
 
@@ -15,12 +18,12 @@ struct TempoMeshBackground: View {
             let points = meshPoints(at: t)
 
             ZStack {
-                MeshGradient(width: 3, height: 3, points: points, colors: Self.halfColors)
-                MeshGradient(width: 3, height: 3, points: points, colors: Self.doubleColors)
+                MeshGradient(width: 3, height: 3, points: points, colors: theme.half.mesh)
+                MeshGradient(width: 3, height: 3, points: points, colors: theme.double.mesh)
                     .opacity(isDoubling ? 1 : 0)
             }
             .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: isDoubling)
-            .overlay(Color.black.opacity(0.25))   // veil keeps text crisp over the gradient
+            .overlay(theme.palette(isDoubling: isDoubling).veil)   // veil keeps text crisp over the gradient
             .ignoresSafeArea()
         }
     }
@@ -37,16 +40,4 @@ struct TempoMeshBackground: View {
             SIMD2(0, 1),   SIMD2(0.5, 1),  SIMD2(1, 1)
         ]
     }
-
-    // Deep, dark palettes so the mesh reads as ambient atmosphere, never garish.
-    private static let halfColors: [Color] = [
-        Color(red: 0.02, green: 0.03, blue: 0.06), Color(red: 0.03, green: 0.06, blue: 0.11), Color(red: 0.02, green: 0.04, blue: 0.07),
-        Color(red: 0.03, green: 0.08, blue: 0.14), Color(red: 0.04, green: 0.13, blue: 0.20), Color(red: 0.02, green: 0.07, blue: 0.12),
-        Color(red: 0.01, green: 0.02, blue: 0.05), Color(red: 0.02, green: 0.05, blue: 0.09), Color(red: 0.01, green: 0.02, blue: 0.04)
-    ]
-    private static let doubleColors: [Color] = [
-        Color(red: 0.06, green: 0.03, blue: 0.02), Color(red: 0.11, green: 0.06, blue: 0.02), Color(red: 0.07, green: 0.04, blue: 0.02),
-        Color(red: 0.15, green: 0.08, blue: 0.03), Color(red: 0.21, green: 0.12, blue: 0.04), Color(red: 0.12, green: 0.06, blue: 0.02),
-        Color(red: 0.05, green: 0.02, blue: 0.01), Color(red: 0.09, green: 0.05, blue: 0.02), Color(red: 0.04, green: 0.02, blue: 0.01)
-    ]
 }

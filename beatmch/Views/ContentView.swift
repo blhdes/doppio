@@ -5,6 +5,13 @@ struct ContentView: View {
     @State private var vm = BPMViewModel()
     @State private var haptics = HapticsEngine()
 
+    /// The active visual theme — restored from the last shake, or Midnight on a
+    /// fresh install. A shake swaps it for a random different one.
+    @State private var theme = Theme.named(UserDefaults.standard.string(forKey: ContentView.themeKey))
+
+    /// Where the last-picked theme id is remembered between launches.
+    private static let themeKey = "beatmch.theme"
+
     /// BPM captured when a swipe starts, so dragging is relative to it.
     @State private var bpmAtDragStart: Double?
     /// Vertical position where the swipe started (removes the initial jump).
@@ -21,7 +28,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            TempoMeshBackground(isDoubling: vm.isDoubling, reduceMotion: reduceMotion)
+            TempoMeshBackground(theme: theme, isDoubling: vm.isDoubling, reduceMotion: reduceMotion)
 
             VStack(spacing: 24) {
                 Spacer(minLength: 0)
@@ -31,6 +38,7 @@ struct ContentView: View {
                     sourceBPM: vm.bpm,
                     displayText: Self.format(vm.result),
                     accent: accent,
+                    ink: ink,
                     reduceMotion: reduceMotion
                 )
                 sourceLine
@@ -51,7 +59,8 @@ struct ContentView: View {
                 .animation(.easeOut(duration: 0.25), value: isDragging)
                 .allowsHitTesting(false)        // purely visual — never blocks the swipe
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(palette.prefersDarkUI ? .dark : .light)
+        .background(ShakeDetector(onShake: shuffleTheme))
         .onAppear { haptics.prepare() }
     }
 
@@ -67,25 +76,25 @@ struct ContentView: View {
                 .font(.headline.weight(.semibold))
                 .monospacedDigit()
         }
-        .foregroundStyle(accent)
+        .foregroundStyle(ink)   // ink, not accent, so the label always contrasts the chip
         .contentTransition(.opacity)
         .padding(.horizontal, 18)
         .padding(.vertical, 10)
-        .glassSurface(in: Capsule(), tint: accent)
-        .overlay(Capsule().strokeBorder(accent.opacity(0.35), lineWidth: 1))
+        .glassSurface(in: Capsule())   // neutral glass tracks the background; accent stays the outline
+        .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
     }
 
     /// The tempo you dialled in — the "from X BPM" half of the relationship.
     private var sourceLine: some View {
         HStack(spacing: 6) {
             Text("from")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(ink.opacity(0.6))
             Text(Self.format(vm.bpm))
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(ink.opacity(0.9))
                 .contentTransition(.numericText(value: vm.bpm))
             Text("BPM")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(ink.opacity(0.6))
         }
         .font(.system(size: 18, weight: .medium, design: .rounded))
     }
@@ -93,7 +102,7 @@ struct ContentView: View {
     private var hint: some View {
         Text("Swipe ↕ to set BPM   ·   Tap to flip")
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(ink.opacity(0.6))
             .padding(.bottom, 8)
     }
 
@@ -110,7 +119,7 @@ struct ContentView: View {
                 var tick = Path()
                 tick.move(to: CGPoint(x: size.width - len, y: y))
                 tick.addLine(to: CGPoint(x: size.width, y: y))
-                ctx.stroke(tick, with: .color(.white.opacity(major ? 0.35 : 0.18)),
+                ctx.stroke(tick, with: .color(ink.opacity(major ? 0.35 : 0.18)),
                            lineWidth: major ? 1.5 : 1)
             }
             // bottom = min BPM, top = max BPM (matches "swipe up = faster").
@@ -127,7 +136,23 @@ struct ContentView: View {
         .padding(.trailing, 10)
     }
 
-    private var accent: Color { vm.isDoubling ? .orange : .cyan }
+    /// The palette to paint right now — depends on the live HALF/DOUBLE mode.
+    private var palette: Palette { theme.palette(isDoubling: vm.isDoubling) }
+    private var accent: Color { palette.accent }
+    private var ink: Color { palette.ink }
+
+    // MARK: - Theme
+
+    /// Shake handler: jump to a random *different* theme, remember it, and celebrate.
+    /// Filtering out the current theme guarantees every shake visibly changes something.
+    private func shuffleTheme() {
+        let next = Theme.all.filter { $0.id != theme.id }.randomElement() ?? theme
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) {
+            theme = next
+        }
+        UserDefaults.standard.set(next.id, forKey: Self.themeKey)
+        haptics.shuffle()
+    }
 
     // MARK: - Gesture
 

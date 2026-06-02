@@ -14,6 +14,8 @@ struct PulseOrb: View {
     let sourceBPM: Double
     let displayText: String
     let accent: Color
+    /// Text colour for the big number — light on dark themes, dark on light ones.
+    let ink: Color
     let reduceMotion: Bool
 
     var body: some View {
@@ -40,7 +42,7 @@ struct PulseOrb: View {
                     Text(displayText)
                         .font(.system(size: 96, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(.white)
+                        .foregroundStyle(ink)
                         .contentTransition(.numericText(value: resultBPM))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)

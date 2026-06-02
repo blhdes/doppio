@@ -9,11 +9,13 @@ final class HapticsEngine {
 
     private let selection = UISelectionFeedbackGenerator()
     private let impact = UIImpactFeedbackGenerator(style: .rigid)
+    private let notification = UINotificationFeedbackGenerator()
 
     /// Warm up the haptic hardware. Call once when the view appears.
     func prepare() {
         selection.prepare()
         impact.prepare()
+        notification.prepare()
     }
 
     /// Light tick — played each time the BPM crosses a whole number while swiping.
@@ -26,5 +28,11 @@ final class HapticsEngine {
     func toggle() {
         impact.impactOccurred()
         impact.prepare()
+    }
+
+    /// Celebratory pattern — played when a shake lands on a new theme.
+    func shuffle() {
+        notification.notificationOccurred(.success)
+        notification.prepare()
     }
 }
