@@ -21,7 +21,7 @@ A minimalist iOS BPM half-time / double-time tool for DJs — a living metronome
 
 ## Look & feel
 
-- **20 themes**, each with its own deep mesh-gradient background that shifts between a HALF and a DOUBLE palette, crossfading on the flip.
+- **12 themes**, each a *cross-hue journey* — the mesh-gradient background sweeps diagonally through three real hues (e.g. indigo → blue → teal) instead of dimming a single one, lit by a jewel accent. Every theme shifts between a HALF and a DOUBLE palette, and the ×2 / ×½ flip does something deliberate to the colour (a warm↔cool swap, a brightness lift, or a hue clash), crossfading as it goes.
 - **Shake** the phone to change to a random theme; its name surfaces briefly to confirm.
 - Your last BPM, mode, beat style, and theme are all remembered between launches.
 
@@ -56,7 +56,7 @@ beatmch/
 ├── ViewModels/BPMViewModel.swift     # state, math, persistence
 ├── Services/HapticsEngine.swift      # primed haptic generators
 ├── Theme/
-│   ├── Theme.swift                   # the 20 themes + their HALF/DOUBLE palettes
+│   ├── Theme.swift                   # the 12 themes + their HALF/DOUBLE palettes
 │   └── ThemeContrast.swift           # contrast-aware ink so text stays readable
 ├── Helpers/
 │   ├── GlassSurface.swift            # Liquid Glass (iOS 26) with material fallback
