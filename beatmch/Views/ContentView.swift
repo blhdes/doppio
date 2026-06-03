@@ -392,7 +392,7 @@ struct ContentView: View {
 
     // MARK: - Beat style
 
-    /// Step to the next beat motion (Orbit → Ripple → Sweep → Pulse → …) and remember it. A light
+    /// Step to the next beat motion (Orbit → Ripple → Sweep → Pulse → Bare → …) and remember it. A light
     /// selection tick confirms the switch; the changed motion is its own visible feedback.
     private func cycleBeatStyle() {
         beatStyle = beatStyle.next

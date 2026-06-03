@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The four ways the beat can come alive around the number. Cycled with a two-finger
-/// tap; the choice is remembered between launches. All four keep the steady centre
-/// number and the inner=result / outer=source two-rhythm idea — they differ only in how
-/// the rhythm is drawn.
+/// The states the orb can take. Cycled with a two-finger tap; the choice is remembered
+/// between launches. The first four keep the steady centre number and the inner=result /
+/// outer=source two-rhythm idea, differing only in how the rhythm is drawn; `bare` strips
+/// all of it away, leaving nothing but the number.
 enum BeatStyle: String, CaseIterable {
     /// A glowing dot orbits each ring once per beat — a metronome bent into a circle.
     case orbit
@@ -14,6 +14,8 @@ enum BeatStyle: String, CaseIterable {
     /// The original: two concentric rings breathe — scale in and out — on each beat,
     /// the bold inner ring (result) carrying a soft glow, the faint outer one the source.
     case pulse
+    /// Nothing at all — no rings, no motion, just the number. The calmest, stillest read.
+    case bare
 
     /// The next style in the cycle, wrapping back to the first.
     var next: BeatStyle {
@@ -53,26 +55,30 @@ struct PulseOrb: View {
     private let innerR: CGFloat = 118   // result-tempo radius (bolder)
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+        // The bare state never animates, so freeze the timeline to a single static frame —
+        // no 30fps loop running just to hold a still number.
+        TimelineView(.animation(minimumInterval: style == .bare ? .infinity : 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let resultPulse = beat(bpm: resultBPM, at: t)
             let sourcePulse = beat(bpm: sourceBPM, at: t)
 
             ZStack {
-                if reduceMotion {
-                    // Motion off: two still guide rings keep the orb's identity.
-                    Circle().strokeBorder(accent.opacity(0.18), lineWidth: 1.5).frame(width: outerR * 2)
-                    Circle().strokeBorder(accent.opacity(0.30), lineWidth: 1.5).frame(width: innerR * 2)
-                } else {
-                    Canvas { ctx, size in
-                        draw(in: &ctx, size: size,
-                             resultPhase: phase(bpm: resultBPM, at: t),
-                             sourcePhase: phase(bpm: sourceBPM, at: t),
-                             resultBeat: resultPulse,
-                             sourceBeat: sourcePulse)
+                if style != .bare {
+                    if reduceMotion {
+                        // Motion off: two still guide rings keep the orb's identity.
+                        Circle().strokeBorder(accent.opacity(0.18), lineWidth: 1.5).frame(width: outerR * 2)
+                        Circle().strokeBorder(accent.opacity(0.30), lineWidth: 1.5).frame(width: innerR * 2)
+                    } else {
+                        Canvas { ctx, size in
+                            draw(in: &ctx, size: size,
+                                 resultPhase: phase(bpm: resultBPM, at: t),
+                                 sourcePhase: phase(bpm: sourceBPM, at: t),
+                                 resultBeat: resultPulse,
+                                 sourceBeat: sourcePulse)
+                        }
+                        .frame(width: canvasSize, height: canvasSize)
+                        .allowsHitTesting(false)
                     }
-                    .frame(width: canvasSize, height: canvasSize)
-                    .allowsHitTesting(false)
                 }
 
                 VStack(spacing: 14) {
@@ -84,7 +90,7 @@ struct PulseOrb: View {
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
 
-                    if reduceMotion {
+                    if reduceMotion && style != .bare {
                         HStack(spacing: 10) {
                             Circle().fill(accent)
                                 .frame(width: 8, height: 8)
@@ -138,6 +144,9 @@ struct PulseOrb: View {
                 layer.addFilter(.shadow(color: accent.opacity(0.5 * resultBeat), radius: 18))
                 layer.stroke(circlePath(c, inner), with: .color(accent.opacity(0.85)), lineWidth: 3)
             }
+
+        case .bare:
+            break   // nothing to draw — the Canvas isn't even mounted in this state
         }
     }
 
