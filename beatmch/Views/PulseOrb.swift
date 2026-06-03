@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The three ways the beat can come alive around the number. Cycled with a two-finger
-/// tap; the choice is remembered between launches. All three keep the steady centre
+/// The four ways the beat can come alive around the number. Cycled with a two-finger
+/// tap; the choice is remembered between launches. All four keep the steady centre
 /// number and the inner=result / outer=source two-rhythm idea — they differ only in how
 /// the rhythm is drawn.
 enum BeatStyle: String, CaseIterable {
@@ -11,6 +11,9 @@ enum BeatStyle: String, CaseIterable {
     case ripple
     /// A bright arc sweeps around each ring once per beat, like a radar.
     case sweep
+    /// The original: two concentric rings breathe — scale in and out — on each beat,
+    /// the bold inner ring (result) carrying a soft glow, the faint outer one the source.
+    case pulse
 
     /// The next style in the cycle, wrapping back to the first.
     var next: BeatStyle {
@@ -65,7 +68,8 @@ struct PulseOrb: View {
                         draw(in: &ctx, size: size,
                              resultPhase: phase(bpm: resultBPM, at: t),
                              sourcePhase: phase(bpm: sourceBPM, at: t),
-                             resultBeat: resultPulse)
+                             resultBeat: resultPulse,
+                             sourceBeat: sourcePulse)
                     }
                     .frame(width: canvasSize, height: canvasSize)
                     .allowsHitTesting(false)
@@ -102,7 +106,8 @@ struct PulseOrb: View {
     /// Paint the active style. A faint heartbeat bloom behind the number ties every style to
     /// the result tempo without moving the number itself.
     private func draw(in ctx: inout GraphicsContext, size: CGSize,
-                      resultPhase: Double, sourcePhase: Double, resultBeat: Double) {
+                      resultPhase: Double, sourcePhase: Double,
+                      resultBeat: Double, sourceBeat: Double) {
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
 
         // Heartbeat bloom — a soft glow that brightens on each result beat.
@@ -127,6 +132,18 @@ struct PulseOrb: View {
             strokeRing(&ctx, c, innerR, accent.opacity(0.14), 1.5)
             sweepArc(&ctx, c, outerR, sourcePhase, accent.opacity(0.55), width: 3)
             sweepArc(&ctx, c, innerR, resultPhase, accent, width: 4)
+
+        case .pulse:
+            // The original look: two rings breathing in and out on the beat. The faint
+            // outer ring rides the source tempo; the bold inner ring (result) swells more
+            // and carries a glow that brightens right on each beat, then fades.
+            let outer = outerR * (1 + 0.05 * sourceBeat)
+            let inner = innerR * (1 + 0.09 * resultBeat)
+            strokeRing(&ctx, c, outer, accent.opacity(0.22), 2)
+            ctx.drawLayer { layer in
+                layer.addFilter(.shadow(color: accent.opacity(0.5 * resultBeat), radius: 18))
+                layer.stroke(circlePath(c, inner), with: .color(accent.opacity(0.85)), lineWidth: 3)
+            }
         }
     }
 
