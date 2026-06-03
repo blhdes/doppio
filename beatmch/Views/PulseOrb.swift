@@ -126,14 +126,18 @@ struct PulseOrb: View {
             orbitDot(&ctx, c, innerR, resultPhase, accent, dot: 10, glow: 22)
 
         case .ripple:
+            // Honest one-ripple-per-beat at the real tempo; the brightness swells in then
+            // out across the beat (see `ripples`) so fast beats read as a pulse, not a flash.
             ripples(&ctx, c, sourcePhase, accent, strength: 0.40)
             ripples(&ctx, c, resultPhase, accent, strength: 0.85)
 
         case .sweep:
+            // One turn per beat at the real tempo. The trail lengthens with speed (honest
+            // motion blur), so quick tempos smear into a smooth ring instead of strobing.
             strokeRing(&ctx, c, outerR, accent.opacity(0.10), 1.5)
             strokeRing(&ctx, c, innerR, accent.opacity(0.14), 1.5)
-            sweepArc(&ctx, c, outerR, sourcePhase, accent.opacity(0.55), width: 3)
-            sweepArc(&ctx, c, innerR, resultPhase, accent, width: 4)
+            sweepArc(&ctx, c, outerR, sourcePhase, accent.opacity(0.55), width: 3, span: sweepSpan(bpm: sourceBPM))
+            sweepArc(&ctx, c, innerR, resultPhase, accent, width: 4, span: sweepSpan(bpm: resultBPM))
 
         case .pulse:
             // The original look: two rings breathing in and out on the beat. The faint
@@ -162,13 +166,12 @@ struct PulseOrb: View {
         ctx.fill(circlePath(p, dot / 2), with: .color(color))
     }
 
-    /// A wedge whose bright leading edge sits at `phase` and fades into a tail behind it.
-    /// Built from short chords so the opacity ramp is clean regardless of arc direction.
+    /// A comet whose bright leading edge sits at `phase` and fades into a tail of length
+    /// `span` radians behind it. Built from short chords so the opacity ramp stays clean.
     private func sweepArc(_ ctx: inout GraphicsContext, _ c: CGPoint, _ r: CGFloat,
-                          _ phase: Double, _ color: Color, width: CGFloat) {
+                          _ phase: Double, _ color: Color, width: CGFloat, span: Double) {
         let lead = angle(phase)
-        let span = Double.pi / 2          // a 90° tail
-        let segments = 18
+        let segments = 36
         var prev = point(c, r, lead - span)
         for i in 1...segments {
             let f = Double(i) / Double(segments)      // 0 at tail → 1 at head
@@ -184,15 +187,17 @@ struct PulseOrb: View {
         ctx.fill(circlePath(prev, width), with: .color(color))
     }
 
-    /// Two rings per tempo, born at the centre and expanding outward as they fade — offset
-    /// half a beat apart so a ripple is always mid-flight.
+    /// Two rings per tempo, born at the centre and expanding outward — offset half a beat
+    /// apart so a ripple is always mid-flight. The brightness swells in then out across the
+    /// beat (a smooth arch) instead of popping in at the centre, so fast tempos read as a
+    /// pulse of light rather than a hard flash.
     private func ripples(_ ctx: inout GraphicsContext, _ c: CGPoint,
                          _ phase: Double, _ color: Color, strength: Double) {
         let r0: CGFloat = 70, rMax: CGFloat = 165
         for offset in [0.0, 0.5] {
             let age = (phase + offset).truncatingRemainder(dividingBy: 1)
             let r = r0 + CGFloat(age) * (rMax - r0)
-            let fade = (1 - age) * strength
+            let fade = sin(.pi * age) * strength      // 0 → peak → 0 across the beat
             strokeRing(&ctx, c, r, color.opacity(fade), 1.0 + CGFloat(1 - age) * 1.5)
         }
     }
@@ -228,9 +233,21 @@ struct PulseOrb: View {
     }
 
     /// Where we are within the current beat: 0 at the onset, climbing toward 1 just before
-    /// the next. Drives the orbiting dot and the sweep arc.
+    /// the next. One full turn per beat, locked to the real tempo. Drives the orbiting dot,
+    /// the sweep comet, and the ripples.
     private func phase(bpm: Double, at t: TimeInterval) -> Double {
         guard bpm > 0 else { return 0 }
         return (t * bpm / 60).truncatingRemainder(dividingBy: 1)
+    }
+
+    /// Length, in radians, of the sweep comet's trail — the angle its head covers in a fixed
+    /// ~0.28s of afterglow. Honest motion blur: the rate is still one turn per beat, but a
+    /// quick tempo smears the head into a long, near-full-ring streak that reads calmly
+    /// instead of strobing. Clamped so slow tempos keep a visible comet and fast ones don't
+    /// quite close the loop onto their own tail.
+    private func sweepSpan(bpm: Double) -> Double {
+        let persistence = 0.28                       // seconds of afterglow
+        let span = bpm / 60 * persistence * 2 * .pi  // angle the head covers in that time
+        return min(1.9 * .pi, max(.pi / 3, span))
     }
 }
