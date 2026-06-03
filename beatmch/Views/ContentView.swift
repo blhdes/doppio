@@ -62,6 +62,11 @@ struct ContentView: View {
     /// same coordinates the touches arrive in.
     @State private var containerSize: CGSize = .zero
 
+    /// Opacity of the brief full-screen flash that pulses on each tempo detent; eases back to
+    /// 0 so the screen always returns to normal. The flash uses the theme's own contrary tone
+    /// (`ink` — light on dark themes, dark on light), so it stays in the theme's language.
+    @State private var flashLevel: Double = 0
+
     // MARK: Hint visibility
     //
     // The bottom hint is a first-run teacher, not permanent chrome. It fades out the
@@ -132,6 +137,13 @@ struct ContentView: View {
         .overlay(alignment: .top) {
             themeNameCard
                 .allowsHitTesting(false)   // a label, not a control
+        }
+        .overlay {
+            // A quick pulse of the theme's contrary tone on each tempo detent — a visible partner to the haptic.
+            ink
+                .opacity(flashLevel)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
         .overlay {
             // The fade cover for shake-to-change-theme. Sits above everything so the swap is
@@ -370,6 +382,14 @@ struct ContentView: View {
         UserDefaults.standard.set(next.id, forKey: Self.themeKey)
     }
 
+    /// Pulse a brief flash of the theme's contrary tone on a tempo detent, then ease it back
+    /// to nothing. A visible companion to the haptic tick. Off under Reduce Motion.
+    private func tickFlash() {
+        guard !reduceMotion else { return }
+        flashLevel = 0.14
+        withAnimation(.easeOut(duration: 0.16)) { flashLevel = 0 }
+    }
+
     // MARK: - Beat style
 
     /// Step to the next beat motion (Orbit → Ripple → Sweep → …) and remember it. A light
@@ -484,6 +504,7 @@ struct ContentView: View {
         // Haptic "detent" on every whole BPM — or every 0.1 BPM while fine-tuning.
         let tick = tickIndex(vm.bpm, fine: fine)
         if tick != lastTick {
+            tickFlash()
             lastTick = tick
             haptics.tick()
         }
@@ -563,6 +584,7 @@ struct ContentView: View {
         vm.setBPM(bpmForBarY(driver.location.y))
         let tick = tickIndex(vm.bpm, fine: false)
         if tick != lastTick {
+            tickFlash()
             lastTick = tick
             haptics.tick()
         }
