@@ -81,27 +81,29 @@ struct PulseOrb: View {
                     }
                 }
 
-                VStack(spacing: 14) {
-                    Text(displayText)
-                        .font(.system(size: 96, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(ink)
-                        .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
+                // The number stands alone in the ZStack so it always shares the rings'
+                // exact centre. The Reduce-Motion blink dots are a separate layer, offset
+                // downward — they sit below the number instead of pushing it up off-centre.
+                Text(displayText)
+                    .font(.system(size: 96, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(ink)
+                    .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .frame(width: 230)
 
-                    if reduceMotion && style != .bare {
-                        HStack(spacing: 10) {
-                            Circle().fill(accent)
-                                .frame(width: 8, height: 8)
-                                .opacity(0.2 + 0.8 * resultPulse)
-                            Circle().fill(accent.opacity(0.55))
-                                .frame(width: 8, height: 8)
-                                .opacity(0.15 + 0.7 * sourcePulse)
-                        }
+                if reduceMotion && style != .bare {
+                    HStack(spacing: 10) {
+                        Circle().fill(accent)
+                            .frame(width: 8, height: 8)
+                            .opacity(0.2 + 0.8 * resultPulse)
+                        Circle().fill(accent.opacity(0.55))
+                            .frame(width: 8, height: 8)
+                            .opacity(0.15 + 0.7 * sourcePulse)
                     }
+                    .offset(y: 76)
                 }
-                .frame(width: 230)
             }
         }
         .frame(width: 320, height: 320)
