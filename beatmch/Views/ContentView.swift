@@ -240,22 +240,19 @@ struct ContentView: View {
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
 
-    /// The transient name of the theme you just shook into. Borrows the mode-pill recipe
-    /// (neutral glass + faint accent outline + ink text) so it sits in the app's own language,
-    /// and only ever shows for a moment via `showThemeName`.
+    /// The transient name of the theme you just shook into. No pill, no outline — just quiet,
+    /// dim, lightly-tracked type that speaks the same language as the bottom hint, so it reads
+    /// as a passing confirmation rather than a control. Only ever shows for a moment via
+    /// `showThemeName`.
     private var themeNameCard: some View {
         Text(theme.name)
-            .font(.headline.weight(.heavy))
-            .tracking(4)
+            .font(.subheadline.weight(.medium))
+            .tracking(2)
             .textCase(.uppercase)
-            .foregroundStyle(ink)
+            .foregroundStyle(ink.opacity(0.6))
             .contentTransition(.opacity)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .glassSurface(in: Capsule())
-            .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
             .opacity(showThemeName ? 1 : 0)
-            .padding(.top, 8)
+            .padding(.top, 16)
     }
 
     private var hint: some View {
