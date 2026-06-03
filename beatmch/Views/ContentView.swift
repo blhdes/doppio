@@ -386,8 +386,8 @@ struct ContentView: View {
     /// to nothing. A visible companion to the haptic tick. Off under Reduce Motion.
     private func tickFlash() {
         guard !reduceMotion else { return }
-        flashLevel = 0.14
-        withAnimation(.easeOut(duration: 0.16)) { flashLevel = 0 }
+        flashLevel = 0.30
+        withAnimation(.easeOut(duration: 0.18)) { flashLevel = 0 }
     }
 
     // MARK: - Beat style

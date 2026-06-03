@@ -103,18 +103,12 @@ struct PulseOrb: View {
 
     // MARK: - Drawing
 
-    /// Paint the active style. A faint heartbeat bloom behind the number ties every style to
-    /// the result tempo without moving the number itself.
+    /// Paint the active style. Each style carries its own beat feedback through its motion —
+    /// there's no shared behind-the-number bloom, which popped in on every completed circle.
     private func draw(in ctx: inout GraphicsContext, size: CGSize,
                       resultPhase: Double, sourcePhase: Double,
                       resultBeat: Double, sourceBeat: Double) {
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
-
-        // Heartbeat bloom — a soft glow that brightens on each result beat.
-        let bloomR: CGFloat = 150
-        ctx.fill(circlePath(c, bloomR),
-                 with: .radialGradient(Gradient(colors: [accent.opacity(0.10 * resultBeat), .clear]),
-                                       center: c, startRadius: 0, endRadius: bloomR))
 
         switch style {
         case .orbit:
