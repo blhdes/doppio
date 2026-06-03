@@ -33,12 +33,31 @@ struct Palette: Equatable {
     }
 }
 
+extension Palette {
+    /// Build a 3×3 mesh that **sweeps diagonally across three colours** instead of dimming
+    /// one. `a` anchors the top-left corner, `c` the bottom-right, and `b` rides the centre
+    /// diagonal between them; the two halfway blends fill the rest. The result is a gradient
+    /// that actually *travels* corner-to-corner through real hues (indigo → blue → teal),
+    /// rather than the same one-hue vignette every theme used to share.
+    ///
+    /// Blends are taken in `.device` (plain sRGB) space so the midpoints stay in-gamut and
+    /// land exactly where `ThemeContrast`'s sRGB luminance maths expects them.
+    static func sweep(_ a: Color, _ b: Color, _ c: Color) -> [Color] {
+        let ab = a.mix(with: b, by: 0.5, in: .device)
+        let bc = b.mix(with: c, by: 0.5, in: .device)
+        return [a,  ab, b,
+                ab, b,  bc,
+                b,  bc, c]
+    }
+}
+
 /// One complete visual identity for the app.
 ///
-/// Every theme carries **two** palettes — one for HALF mode, one for DOUBLE — so the
-/// cool→warm shift that signals a tempo flip is preserved in every theme, not just the
-/// original cyan/amber one. Switching themes later means picking a different `Theme`;
-/// flipping tempo means picking a different `Palette` within the current one.
+/// Every theme carries **two** palettes — one for HALF mode, one for DOUBLE. What the
+/// ×2 / ×½ flip *does* to the colour is chosen per theme on purpose (a warm↔cool shift,
+/// a brightness lift, or a hostile hue clash) and noted in each theme's comment, so the
+/// flip always means something deliberate. Switching themes means picking a different
+/// `Theme`; flipping tempo means picking a different `Palette` within the current one.
 struct Theme: Identifiable, Equatable {
     /// Stable, lowercase key — handy for persistence and `ForEach` in a future picker.
     let id: String
@@ -69,476 +88,295 @@ extension Theme {
 
 extension Theme {
     /// Every built-in theme, in display order — a journey from deep-dark to bright-light.
-    /// Adding another is literally appending one more entry here.
+    /// A curated set: one strong identity per lane, no near-duplicates. Adding another is
+    /// literally appending one more entry here.
     static let all: [Theme] = [
-        midnight, neon, vapor, voltage, toxic, magma, crimson,
-        sunset, ember, aurora, forest, ocean,
-        mono, slate, paper,
-        daylight, sky, mint, sand, bubblegum
+        midnight, voltage, toxic, ocean, aurora, forest,
+        crimson, ember, mono,
+        paper, daylight, bubblegum
     ]
 
-    // MARK: Dark — the originals & the moody ones
+    // MARK: Dark — cool & electric
 
-    /// The app's original identity: cool cyan in HALF, warm amber in DOUBLE, over deep
-    /// near-black mesh gradients. Colours kept byte-identical to the first build.
+    /// The app's original identity. FLIP: warm↔cool — cool sapphire night that travels
+    /// indigo → blue → teal in HALF, swapping to a warm amber ember-bed in DOUBLE.
     static let midnight = Theme(
         id: "midnight",
         name: "Midnight",
         half: Palette(
-            accent: .cyan,
-            mesh: [
-                Color(red: 0.02, green: 0.03, blue: 0.06), Color(red: 0.03, green: 0.06, blue: 0.11), Color(red: 0.02, green: 0.04, blue: 0.07),
-                Color(red: 0.03, green: 0.08, blue: 0.14), Color(red: 0.04, green: 0.13, blue: 0.20), Color(red: 0.02, green: 0.07, blue: 0.12),
-                Color(red: 0.01, green: 0.02, blue: 0.05), Color(red: 0.02, green: 0.05, blue: 0.09), Color(red: 0.01, green: 0.02, blue: 0.04)
-            ]
+            accent: Color(red: 0.18, green: 0.62, blue: 0.85),
+            mesh: Palette.sweep(
+                Color(red: 0.04, green: 0.03, blue: 0.12),
+                Color(red: 0.02, green: 0.06, blue: 0.15),
+                Color(red: 0.02, green: 0.11, blue: 0.15)
+            )
         ),
         double: Palette(
-            accent: .orange,
-            mesh: [
-                Color(red: 0.06, green: 0.03, blue: 0.02), Color(red: 0.11, green: 0.06, blue: 0.02), Color(red: 0.07, green: 0.04, blue: 0.02),
-                Color(red: 0.15, green: 0.08, blue: 0.03), Color(red: 0.21, green: 0.12, blue: 0.04), Color(red: 0.12, green: 0.06, blue: 0.02),
-                Color(red: 0.05, green: 0.02, blue: 0.01), Color(red: 0.09, green: 0.05, blue: 0.02), Color(red: 0.04, green: 0.02, blue: 0.01)
-            ]
+            accent: Color(red: 0.95, green: 0.62, blue: 0.20),
+            mesh: Palette.sweep(
+                Color(red: 0.10, green: 0.05, blue: 0.04),
+                Color(red: 0.14, green: 0.08, blue: 0.03),
+                Color(red: 0.17, green: 0.10, blue: 0.03)
+            )
         )
     )
 
-    /// Synthwave: an almost-black canvas so the electric accents scream. Cyan → magenta.
-    static let neon = Theme(
-        id: "neon",
-        name: "Neon",
-        half: Palette(
-            accent: Color(red: 0.00, green: 0.95, blue: 1.00),
-            mesh: [
-                Color(red: 0.01, green: 0.02, blue: 0.05), Color(red: 0.01, green: 0.03, blue: 0.08), Color(red: 0.01, green: 0.02, blue: 0.05),
-                Color(red: 0.02, green: 0.03, blue: 0.10), Color(red: 0.02, green: 0.05, blue: 0.14), Color(red: 0.01, green: 0.03, blue: 0.09),
-                Color(red: 0.00, green: 0.01, blue: 0.03), Color(red: 0.01, green: 0.02, blue: 0.06), Color(red: 0.00, green: 0.01, blue: 0.03)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 1.00, green: 0.10, blue: 0.62),
-            mesh: [
-                Color(red: 0.05, green: 0.01, blue: 0.05), Color(red: 0.08, green: 0.01, blue: 0.08), Color(red: 0.05, green: 0.01, blue: 0.05),
-                Color(red: 0.10, green: 0.02, blue: 0.10), Color(red: 0.14, green: 0.02, blue: 0.14), Color(red: 0.09, green: 0.01, blue: 0.09),
-                Color(red: 0.03, green: 0.00, blue: 0.03), Color(red: 0.06, green: 0.01, blue: 0.06), Color(red: 0.03, green: 0.00, blue: 0.03)
-            ]
-        )
-    )
-
-    /// Dusk into fire: a purple-blue evening sky in HALF, a blazing horizon in DOUBLE.
-    static let sunset = Theme(
-        id: "sunset",
-        name: "Sunset",
-        half: Palette(
-            accent: Color(red: 1.00, green: 0.42, blue: 0.62),
-            mesh: [
-                Color(red: 0.06, green: 0.03, blue: 0.10), Color(red: 0.10, green: 0.04, blue: 0.14), Color(red: 0.05, green: 0.03, blue: 0.09),
-                Color(red: 0.12, green: 0.05, blue: 0.16), Color(red: 0.20, green: 0.07, blue: 0.20), Color(red: 0.09, green: 0.04, blue: 0.13),
-                Color(red: 0.04, green: 0.02, blue: 0.08), Color(red: 0.08, green: 0.03, blue: 0.11), Color(red: 0.03, green: 0.02, blue: 0.06)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 1.00, green: 0.78, blue: 0.28),
-            mesh: [
-                Color(red: 0.12, green: 0.04, blue: 0.02), Color(red: 0.18, green: 0.06, blue: 0.02), Color(red: 0.10, green: 0.03, blue: 0.02),
-                Color(red: 0.20, green: 0.07, blue: 0.02), Color(red: 0.28, green: 0.10, blue: 0.03), Color(red: 0.16, green: 0.05, blue: 0.02),
-                Color(red: 0.09, green: 0.03, blue: 0.01), Color(red: 0.14, green: 0.04, blue: 0.02), Color(red: 0.07, green: 0.02, blue: 0.01)
-            ]
-        )
-    )
-
-    /// Glowing coals: a warm, near-monochrome ember bed. Moody, but lifted enough that
-    /// the coals actually glow instead of reading as flat near-black.
-    static let ember = Theme(
-        id: "ember",
-        name: "Ember",
-        half: Palette(
-            accent: Color(red: 0.95, green: 0.65, blue: 0.30),
-            mesh: [
-                Color(red: 0.08, green: 0.04, blue: 0.02), Color(red: 0.13, green: 0.07, blue: 0.03), Color(red: 0.08, green: 0.04, blue: 0.02),
-                Color(red: 0.15, green: 0.08, blue: 0.04), Color(red: 0.20, green: 0.11, blue: 0.05), Color(red: 0.12, green: 0.07, blue: 0.03),
-                Color(red: 0.06, green: 0.03, blue: 0.02), Color(red: 0.10, green: 0.05, blue: 0.03), Color(red: 0.05, green: 0.02, blue: 0.01)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 1.00, green: 0.45, blue: 0.20),
-            mesh: [
-                Color(red: 0.16, green: 0.06, blue: 0.02), Color(red: 0.24, green: 0.10, blue: 0.03), Color(red: 0.14, green: 0.05, blue: 0.02),
-                Color(red: 0.28, green: 0.12, blue: 0.04), Color(red: 0.36, green: 0.16, blue: 0.05), Color(red: 0.22, green: 0.09, blue: 0.03),
-                Color(red: 0.12, green: 0.04, blue: 0.02), Color(red: 0.19, green: 0.07, blue: 0.03), Color(red: 0.10, green: 0.04, blue: 0.01)
-            ]
-        )
-    )
-
-    /// Northern lights: a teal-green night curtain that turns to indigo-violet.
-    static let aurora = Theme(
-        id: "aurora",
-        name: "Aurora",
-        half: Palette(
-            accent: Color(red: 0.40, green: 1.00, blue: 0.74),
-            mesh: [
-                Color(red: 0.01, green: 0.06, blue: 0.06), Color(red: 0.02, green: 0.10, blue: 0.09), Color(red: 0.01, green: 0.05, blue: 0.06),
-                Color(red: 0.02, green: 0.12, blue: 0.11), Color(red: 0.03, green: 0.18, blue: 0.15), Color(red: 0.01, green: 0.09, blue: 0.10),
-                Color(red: 0.01, green: 0.04, blue: 0.05), Color(red: 0.01, green: 0.07, blue: 0.07), Color(red: 0.00, green: 0.03, blue: 0.04)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.70, green: 0.50, blue: 1.00),
-            mesh: [
-                Color(red: 0.05, green: 0.03, blue: 0.10), Color(red: 0.08, green: 0.04, blue: 0.16), Color(red: 0.04, green: 0.02, blue: 0.09),
-                Color(red: 0.10, green: 0.05, blue: 0.18), Color(red: 0.14, green: 0.07, blue: 0.24), Color(red: 0.07, green: 0.03, blue: 0.14),
-                Color(red: 0.03, green: 0.02, blue: 0.08), Color(red: 0.06, green: 0.03, blue: 0.12), Color(red: 0.02, green: 0.01, blue: 0.06)
-            ]
-        )
-    )
-
-    /// Deep woods: a forest-green canopy in HALF, sunlit olive/chartreuse in DOUBLE.
-    static let forest = Theme(
-        id: "forest",
-        name: "Forest",
-        half: Palette(
-            accent: Color(red: 0.62, green: 0.95, blue: 0.35),
-            mesh: [
-                Color(red: 0.02, green: 0.05, blue: 0.02), Color(red: 0.03, green: 0.08, blue: 0.03), Color(red: 0.02, green: 0.05, blue: 0.02),
-                Color(red: 0.04, green: 0.10, blue: 0.04), Color(red: 0.05, green: 0.14, blue: 0.05), Color(red: 0.03, green: 0.08, blue: 0.03),
-                Color(red: 0.01, green: 0.04, blue: 0.02), Color(red: 0.02, green: 0.06, blue: 0.02), Color(red: 0.01, green: 0.03, blue: 0.01)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.85, green: 0.85, blue: 0.25),
-            mesh: [
-                Color(red: 0.06, green: 0.06, blue: 0.02), Color(red: 0.09, green: 0.09, blue: 0.03), Color(red: 0.05, green: 0.06, blue: 0.02),
-                Color(red: 0.11, green: 0.11, blue: 0.03), Color(red: 0.15, green: 0.14, blue: 0.04), Color(red: 0.08, green: 0.09, blue: 0.03),
-                Color(red: 0.04, green: 0.05, blue: 0.02), Color(red: 0.07, green: 0.07, blue: 0.02), Color(red: 0.03, green: 0.04, blue: 0.01)
-            ]
-        )
-    )
-
-    /// The abyss: a deep blue that warms toward aqua. Lifted and widened so the water
-    /// has depth, and the HALF→DOUBLE blue→teal shift is now clearly visible.
-    static let ocean = Theme(
-        id: "ocean",
-        name: "Ocean",
-        half: Palette(
-            accent: Color(red: 0.20, green: 0.80, blue: 0.85),
-            mesh: [
-                Color(red: 0.02, green: 0.06, blue: 0.12), Color(red: 0.03, green: 0.10, blue: 0.19), Color(red: 0.02, green: 0.06, blue: 0.13),
-                Color(red: 0.03, green: 0.12, blue: 0.23), Color(red: 0.04, green: 0.17, blue: 0.30), Color(red: 0.03, green: 0.09, blue: 0.20),
-                Color(red: 0.01, green: 0.04, blue: 0.09), Color(red: 0.02, green: 0.07, blue: 0.15), Color(red: 0.01, green: 0.03, blue: 0.07)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.30, green: 0.95, blue: 0.85),
-            mesh: [
-                Color(red: 0.02, green: 0.10, blue: 0.13), Color(red: 0.03, green: 0.16, blue: 0.20), Color(red: 0.02, green: 0.10, blue: 0.13),
-                Color(red: 0.03, green: 0.19, blue: 0.24), Color(red: 0.04, green: 0.26, blue: 0.32), Color(red: 0.03, green: 0.14, blue: 0.21),
-                Color(red: 0.01, green: 0.07, blue: 0.10), Color(red: 0.02, green: 0.12, blue: 0.16), Color(red: 0.01, green: 0.05, blue: 0.08)
-            ]
-        )
-    )
-
-    // MARK: Dark — vivid & loud
-
-    /// Vaporwave: saturated teal/indigo that flips to hot magenta-purple. Brighter and
-    /// far more colourful than Neon — built to be loud while still reading as one mood.
-    static let vapor = Theme(
-        id: "vapor",
-        name: "Vapor",
-        half: Palette(
-            accent: Color(red: 0.10, green: 0.95, blue: 1.00),
-            mesh: [
-                Color(red: 0.04, green: 0.10, blue: 0.18), Color(red: 0.06, green: 0.16, blue: 0.26), Color(red: 0.05, green: 0.08, blue: 0.20),
-                Color(red: 0.05, green: 0.18, blue: 0.30), Color(red: 0.08, green: 0.26, blue: 0.40), Color(red: 0.06, green: 0.14, blue: 0.28),
-                Color(red: 0.03, green: 0.07, blue: 0.14), Color(red: 0.05, green: 0.12, blue: 0.22), Color(red: 0.03, green: 0.05, blue: 0.12)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 1.00, green: 0.15, blue: 0.70),
-            mesh: [
-                Color(red: 0.16, green: 0.04, blue: 0.18), Color(red: 0.24, green: 0.05, blue: 0.26), Color(red: 0.18, green: 0.04, blue: 0.20),
-                Color(red: 0.28, green: 0.05, blue: 0.30), Color(red: 0.38, green: 0.07, blue: 0.40), Color(red: 0.22, green: 0.04, blue: 0.26),
-                Color(red: 0.12, green: 0.03, blue: 0.14), Color(red: 0.20, green: 0.04, blue: 0.22), Color(red: 0.10, green: 0.02, blue: 0.12)
-            ]
-        )
-    )
-
-    /// High-voltage clash: deep electric blue against acid yellow-lime. The two palettes
-    /// are meant to *fight* — a hard, energetic flip rather than a gentle warm shift.
+    /// FLIP: hue clash — deep sapphire blue against a jewel-peridot acid lime. The two
+    /// sides are meant to *fight*, a hard energetic snap rather than a gentle shift.
     static let voltage = Theme(
         id: "voltage",
         name: "Voltage",
         half: Palette(
-            accent: Color(red: 0.20, green: 0.45, blue: 1.00),
-            mesh: [
-                Color(red: 0.02, green: 0.05, blue: 0.18), Color(red: 0.03, green: 0.08, blue: 0.28), Color(red: 0.02, green: 0.05, blue: 0.20),
-                Color(red: 0.03, green: 0.10, blue: 0.34), Color(red: 0.04, green: 0.15, blue: 0.46), Color(red: 0.03, green: 0.08, blue: 0.30),
-                Color(red: 0.01, green: 0.03, blue: 0.14), Color(red: 0.02, green: 0.06, blue: 0.24), Color(red: 0.01, green: 0.03, blue: 0.12)
-            ]
+            accent: Color(red: 0.22, green: 0.45, blue: 0.98),
+            mesh: Palette.sweep(
+                Color(red: 0.03, green: 0.06, blue: 0.20),
+                Color(red: 0.02, green: 0.09, blue: 0.30),
+                Color(red: 0.05, green: 0.06, blue: 0.24)
+            )
         ),
         double: Palette(
-            accent: Color(red: 0.85, green: 1.00, blue: 0.10),
-            mesh: [
-                Color(red: 0.10, green: 0.12, blue: 0.02), Color(red: 0.16, green: 0.20, blue: 0.03), Color(red: 0.11, green: 0.13, blue: 0.02),
-                Color(red: 0.18, green: 0.24, blue: 0.03), Color(red: 0.26, green: 0.34, blue: 0.04), Color(red: 0.14, green: 0.18, blue: 0.02),
-                Color(red: 0.07, green: 0.09, blue: 0.01), Color(red: 0.13, green: 0.16, blue: 0.02), Color(red: 0.06, green: 0.08, blue: 0.01)
-            ]
+            accent: Color(red: 0.80, green: 0.92, blue: 0.12),
+            mesh: Palette.sweep(
+                Color(red: 0.10, green: 0.14, blue: 0.02),
+                Color(red: 0.15, green: 0.21, blue: 0.03),
+                Color(red: 0.09, green: 0.17, blue: 0.02)
+            )
         )
     )
 
-    /// Radioactive: a poison-green glow that mutates into ultraviolet. The loudest of the
-    /// cool themes — two toxic hues with nothing soft between them.
+    /// FLIP: hue clash — a jewel-emerald poison glow that snaps to deep amethyst violet.
+    /// Two near-opposite hues with nothing soft between them; the loudest cool theme.
     static let toxic = Theme(
         id: "toxic",
         name: "Toxic",
         half: Palette(
-            accent: Color(red: 0.50, green: 1.00, blue: 0.15),
-            mesh: [
-                Color(red: 0.03, green: 0.12, blue: 0.04), Color(red: 0.04, green: 0.20, blue: 0.06), Color(red: 0.03, green: 0.13, blue: 0.04),
-                Color(red: 0.05, green: 0.24, blue: 0.07), Color(red: 0.07, green: 0.34, blue: 0.10), Color(red: 0.04, green: 0.18, blue: 0.06),
-                Color(red: 0.02, green: 0.09, blue: 0.03), Color(red: 0.03, green: 0.15, blue: 0.05), Color(red: 0.02, green: 0.07, blue: 0.02)
-            ]
+            accent: Color(red: 0.20, green: 0.85, blue: 0.42),
+            mesh: Palette.sweep(
+                Color(red: 0.03, green: 0.14, blue: 0.06),
+                Color(red: 0.04, green: 0.23, blue: 0.10),
+                Color(red: 0.05, green: 0.18, blue: 0.13)
+            )
         ),
         double: Palette(
-            accent: Color(red: 0.85, green: 0.10, blue: 1.00),
-            mesh: [
-                Color(red: 0.12, green: 0.02, blue: 0.18), Color(red: 0.18, green: 0.03, blue: 0.28), Color(red: 0.13, green: 0.02, blue: 0.20),
-                Color(red: 0.20, green: 0.03, blue: 0.32), Color(red: 0.28, green: 0.05, blue: 0.44), Color(red: 0.16, green: 0.03, blue: 0.26),
-                Color(red: 0.09, green: 0.01, blue: 0.14), Color(red: 0.15, green: 0.02, blue: 0.22), Color(red: 0.07, green: 0.01, blue: 0.11)
-            ]
+            accent: Color(red: 0.70, green: 0.30, blue: 0.96),
+            mesh: Palette.sweep(
+                Color(red: 0.12, green: 0.03, blue: 0.18),
+                Color(red: 0.18, green: 0.04, blue: 0.27),
+                Color(red: 0.14, green: 0.03, blue: 0.22)
+            )
         )
     )
 
-    /// Molten: a deep volcanic violet that erupts into blazing red-orange lava. The
-    /// classic cool→warm flip, pushed to its most extreme.
-    static let magma = Theme(
-        id: "magma",
-        name: "Magma",
+    /// The abyss. FLIP: brightness lift — the same blue→teal water travels navy → blue →
+    /// teal, then DOUBLE simply charges it brighter toward aqua. Same hue, more energy.
+    static let ocean = Theme(
+        id: "ocean",
+        name: "Ocean",
         half: Palette(
-            accent: Color(red: 0.75, green: 0.30, blue: 0.95),
-            mesh: [
-                Color(red: 0.08, green: 0.02, blue: 0.12), Color(red: 0.12, green: 0.03, blue: 0.18), Color(red: 0.09, green: 0.02, blue: 0.13),
-                Color(red: 0.14, green: 0.03, blue: 0.20), Color(red: 0.20, green: 0.05, blue: 0.28), Color(red: 0.11, green: 0.03, blue: 0.16),
-                Color(red: 0.06, green: 0.01, blue: 0.09), Color(red: 0.10, green: 0.02, blue: 0.14), Color(red: 0.05, green: 0.01, blue: 0.07)
-            ]
+            accent: Color(red: 0.16, green: 0.68, blue: 0.82),
+            mesh: Palette.sweep(
+                Color(red: 0.02, green: 0.06, blue: 0.14),
+                Color(red: 0.03, green: 0.11, blue: 0.22),
+                Color(red: 0.02, green: 0.15, blue: 0.20)
+            )
         ),
         double: Palette(
-            accent: Color(red: 1.00, green: 0.35, blue: 0.05),
-            mesh: [
-                Color(red: 0.20, green: 0.04, blue: 0.02), Color(red: 0.30, green: 0.07, blue: 0.02), Color(red: 0.22, green: 0.05, blue: 0.02),
-                Color(red: 0.34, green: 0.08, blue: 0.02), Color(red: 0.46, green: 0.13, blue: 0.03), Color(red: 0.28, green: 0.06, blue: 0.02),
-                Color(red: 0.16, green: 0.03, blue: 0.01), Color(red: 0.26, green: 0.05, blue: 0.02), Color(red: 0.14, green: 0.03, blue: 0.01)
-            ]
+            accent: Color(red: 0.26, green: 0.88, blue: 0.84),
+            mesh: Palette.sweep(
+                Color(red: 0.02, green: 0.11, blue: 0.18),
+                Color(red: 0.03, green: 0.18, blue: 0.27),
+                Color(red: 0.03, green: 0.23, blue: 0.28)
+            )
         )
     )
 
-    /// Blood & neon: a deep scarlet bed that flushes into hot pink. An all-red theme that
-    /// stays saturated and aggressive across the flip.
+    /// Northern lights. FLIP: hue shift — a jade-green curtain that travels green → teal →
+    /// blue, swapping to an indigo→violet sky. The hue travel *is* the identity here.
+    static let aurora = Theme(
+        id: "aurora",
+        name: "Aurora",
+        half: Palette(
+            accent: Color(red: 0.35, green: 0.90, blue: 0.62),
+            mesh: Palette.sweep(
+                Color(red: 0.01, green: 0.10, blue: 0.07),
+                Color(red: 0.02, green: 0.14, blue: 0.13),
+                Color(red: 0.02, green: 0.10, blue: 0.17)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.66, green: 0.45, blue: 0.98),
+            mesh: Palette.sweep(
+                Color(red: 0.06, green: 0.04, blue: 0.16),
+                Color(red: 0.09, green: 0.05, blue: 0.22),
+                Color(red: 0.12, green: 0.05, blue: 0.21)
+            )
+        )
+    )
+
+    /// Deep woods. FLIP: brightness lift — a pine→moss canopy that charges brighter toward
+    /// a sunlit emerald-lime in DOUBLE. Same green family, more light coming through.
+    static let forest = Theme(
+        id: "forest",
+        name: "Forest",
+        half: Palette(
+            accent: Color(red: 0.30, green: 0.80, blue: 0.42),
+            mesh: Palette.sweep(
+                Color(red: 0.02, green: 0.08, blue: 0.04),
+                Color(red: 0.03, green: 0.12, blue: 0.06),
+                Color(red: 0.02, green: 0.12, blue: 0.09)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.58, green: 0.85, blue: 0.25),
+            mesh: Palette.sweep(
+                Color(red: 0.05, green: 0.12, blue: 0.04),
+                Color(red: 0.08, green: 0.17, blue: 0.05),
+                Color(red: 0.11, green: 0.18, blue: 0.05)
+            )
+        )
+    )
+
+    // MARK: Dark — warm
+
+    /// Blood & jewel. FLIP: brightness lift — a deep garnet bed that simply burns brighter
+    /// into a bright ruby-scarlet on DOUBLE. One committed red mood, charged up.
     static let crimson = Theme(
         id: "crimson",
         name: "Crimson",
         half: Palette(
-            accent: Color(red: 1.00, green: 0.20, blue: 0.25),
-            mesh: [
-                Color(red: 0.16, green: 0.02, blue: 0.05), Color(red: 0.24, green: 0.03, blue: 0.08), Color(red: 0.18, green: 0.02, blue: 0.06),
-                Color(red: 0.28, green: 0.04, blue: 0.10), Color(red: 0.38, green: 0.06, blue: 0.13), Color(red: 0.22, green: 0.03, blue: 0.08),
-                Color(red: 0.12, green: 0.02, blue: 0.04), Color(red: 0.20, green: 0.03, blue: 0.07), Color(red: 0.10, green: 0.01, blue: 0.03)
-            ]
+            accent: Color(red: 0.85, green: 0.18, blue: 0.30),
+            mesh: Palette.sweep(
+                Color(red: 0.16, green: 0.02, blue: 0.06),
+                Color(red: 0.22, green: 0.03, blue: 0.08),
+                Color(red: 0.18, green: 0.02, blue: 0.11)
+            )
         ),
         double: Palette(
-            accent: Color(red: 1.00, green: 0.25, blue: 0.55),
-            mesh: [
-                Color(red: 0.20, green: 0.03, blue: 0.12), Color(red: 0.30, green: 0.04, blue: 0.18), Color(red: 0.22, green: 0.03, blue: 0.13),
-                Color(red: 0.34, green: 0.05, blue: 0.20), Color(red: 0.46, green: 0.07, blue: 0.28), Color(red: 0.28, green: 0.04, blue: 0.17),
-                Color(red: 0.15, green: 0.02, blue: 0.09), Color(red: 0.24, green: 0.03, blue: 0.14), Color(red: 0.13, green: 0.02, blue: 0.07)
-            ]
+            accent: Color(red: 1.00, green: 0.28, blue: 0.32),
+            mesh: Palette.sweep(
+                Color(red: 0.26, green: 0.04, blue: 0.10),
+                Color(red: 0.37, green: 0.06, blue: 0.13),
+                Color(red: 0.30, green: 0.04, blue: 0.17)
+            )
         )
     )
 
-    // MARK: Neutral & monochrome
+    /// Glowing coals. FLIP: brightness lift — dim maroon embers that flare brighter into a
+    /// jewel-orange flame. The coals actually glow rather than reading as flat near-black.
+    static let ember = Theme(
+        id: "ember",
+        name: "Ember",
+        half: Palette(
+            accent: Color(red: 0.92, green: 0.60, blue: 0.28),
+            mesh: Palette.sweep(
+                Color(red: 0.10, green: 0.04, blue: 0.03),
+                Color(red: 0.16, green: 0.07, blue: 0.03),
+                Color(red: 0.18, green: 0.09, blue: 0.04)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 1.00, green: 0.48, blue: 0.18),
+            mesh: Palette.sweep(
+                Color(red: 0.20, green: 0.07, blue: 0.02),
+                Color(red: 0.30, green: 0.11, blue: 0.03),
+                Color(red: 0.34, green: 0.14, blue: 0.04)
+            )
+        )
+    )
 
-    /// Graphite: a near-grayscale slate. Cool grey warms a shade — the quiet, dark one.
-    /// Value range widened so the gradient actually reads instead of looking like a flat fill.
+    // MARK: Neutral
+
+    /// Graphite. FLIP: warm↔cool — a near-grayscale slate with the faintest temperature
+    /// journey: a cool blue-grey in HALF that warms a shade in DOUBLE. The quiet dark one.
     static let mono = Theme(
         id: "mono",
         name: "Mono",
         half: Palette(
-            accent: Color(red: 0.85, green: 0.90, blue: 0.95),
-            mesh: [
-                Color(red: 0.05, green: 0.06, blue: 0.07), Color(red: 0.09, green: 0.10, blue: 0.12), Color(red: 0.05, green: 0.06, blue: 0.07),
-                Color(red: 0.11, green: 0.12, blue: 0.14), Color(red: 0.17, green: 0.18, blue: 0.21), Color(red: 0.09, green: 0.10, blue: 0.12),
-                Color(red: 0.04, green: 0.04, blue: 0.05), Color(red: 0.07, green: 0.08, blue: 0.09), Color(red: 0.03, green: 0.03, blue: 0.04)
-            ]
+            accent: Color(red: 0.82, green: 0.88, blue: 0.95),
+            mesh: Palette.sweep(
+                Color(red: 0.06, green: 0.07, blue: 0.09),
+                Color(red: 0.11, green: 0.12, blue: 0.15),
+                Color(red: 0.07, green: 0.08, blue: 0.10)
+            )
         ),
         double: Palette(
-            accent: Color(red: 0.98, green: 0.92, blue: 0.80),
-            mesh: [
-                Color(red: 0.07, green: 0.06, blue: 0.05), Color(red: 0.12, green: 0.10, blue: 0.08), Color(red: 0.07, green: 0.06, blue: 0.05),
-                Color(red: 0.14, green: 0.12, blue: 0.10), Color(red: 0.20, green: 0.17, blue: 0.14), Color(red: 0.12, green: 0.10, blue: 0.08),
-                Color(red: 0.05, green: 0.05, blue: 0.04), Color(red: 0.09, green: 0.08, blue: 0.06), Color(red: 0.04, green: 0.03, blue: 0.03)
-            ]
-        )
-    )
-
-    /// Concrete: a cool, almost-white grey with a faint blue cast that neutralises on the
-    /// flip. The light counterpart to Mono — calm, monochrome, no hue to speak of.
-    static let slate = Theme(
-        id: "slate",
-        name: "Slate",
-        half: Palette(
-            accent: Color(red: 0.30, green: 0.40, blue: 0.55),
-            mesh: [
-                Color(red: 0.90, green: 0.92, blue: 0.94), Color(red: 0.88, green: 0.91, blue: 0.94), Color(red: 0.91, green: 0.93, blue: 0.95),
-                Color(red: 0.87, green: 0.90, blue: 0.93), Color(red: 0.84, green: 0.88, blue: 0.92), Color(red: 0.89, green: 0.91, blue: 0.94),
-                Color(red: 0.92, green: 0.93, blue: 0.95), Color(red: 0.88, green: 0.90, blue: 0.93), Color(red: 0.93, green: 0.94, blue: 0.96)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.42, green: 0.40, blue: 0.46),
-            mesh: [
-                Color(red: 0.93, green: 0.92, blue: 0.91), Color(red: 0.92, green: 0.91, blue: 0.89), Color(red: 0.94, green: 0.93, blue: 0.92),
-                Color(red: 0.91, green: 0.90, blue: 0.88), Color(red: 0.89, green: 0.87, blue: 0.85), Color(red: 0.92, green: 0.91, blue: 0.90),
-                Color(red: 0.94, green: 0.93, blue: 0.92), Color(red: 0.91, green: 0.90, blue: 0.89), Color(red: 0.95, green: 0.94, blue: 0.93)
-            ]
-        )
-    )
-
-    /// Paper: a warm ivory that deepens a touch toward cream. A near-monochrome light
-    /// theme with an inky accent — the most minimal, low-key look in the set.
-    static let paper = Theme(
-        id: "paper",
-        name: "Paper",
-        half: Palette(
-            accent: Color(red: 0.25, green: 0.22, blue: 0.20),
-            mesh: [
-                Color(red: 0.96, green: 0.94, blue: 0.90), Color(red: 0.97, green: 0.95, blue: 0.91), Color(red: 0.96, green: 0.94, blue: 0.89),
-                Color(red: 0.97, green: 0.95, blue: 0.91), Color(red: 0.98, green: 0.96, blue: 0.92), Color(red: 0.96, green: 0.94, blue: 0.90),
-                Color(red: 0.95, green: 0.93, blue: 0.88), Color(red: 0.96, green: 0.94, blue: 0.90), Color(red: 0.94, green: 0.92, blue: 0.87)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.45, green: 0.28, blue: 0.15),
-            mesh: [
-                Color(red: 0.96, green: 0.92, blue: 0.85), Color(red: 0.97, green: 0.93, blue: 0.86), Color(red: 0.96, green: 0.92, blue: 0.84),
-                Color(red: 0.97, green: 0.93, blue: 0.86), Color(red: 0.98, green: 0.94, blue: 0.87), Color(red: 0.96, green: 0.92, blue: 0.85),
-                Color(red: 0.95, green: 0.91, blue: 0.83), Color(red: 0.96, green: 0.92, blue: 0.85), Color(red: 0.94, green: 0.90, blue: 0.82)
-            ]
+            accent: Color(red: 0.96, green: 0.90, blue: 0.78),
+            mesh: Palette.sweep(
+                Color(red: 0.09, green: 0.08, blue: 0.06),
+                Color(red: 0.14, green: 0.12, blue: 0.09),
+                Color(red: 0.10, green: 0.08, blue: 0.06)
+            )
         )
     )
 
     // MARK: Light
 
-    /// Broad daylight: a pale-blue sky in HALF, warm peach noon in DOUBLE. Dark ink,
-    /// saturated accents — the high-contrast light option.
+    /// Paper. FLIP: warm↔cool — a cool ivory that drifts toward a warm cream, with an inky
+    /// accent that warms to sepia. The most minimal, low-key look in the set.
+    static let paper = Theme(
+        id: "paper",
+        name: "Paper",
+        half: Palette(
+            accent: Color(red: 0.22, green: 0.20, blue: 0.24),
+            mesh: Palette.sweep(
+                Color(red: 0.92, green: 0.94, blue: 0.97),
+                Color(red: 0.96, green: 0.96, blue: 0.93),
+                Color(red: 0.94, green: 0.95, blue: 0.97)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.42, green: 0.27, blue: 0.16),
+            mesh: Palette.sweep(
+                Color(red: 0.98, green: 0.94, blue: 0.86),
+                Color(red: 0.97, green: 0.93, blue: 0.84),
+                Color(red: 0.99, green: 0.95, blue: 0.88)
+            )
+        )
+    )
+
+    /// Broad daylight. FLIP: warm↔cool — a pale sky that travels blue → cyan → lavender,
+    /// swapping to a warm noon of gold → peach → rose. The high-contrast light option.
     static let daylight = Theme(
         id: "daylight",
         name: "Daylight",
         half: Palette(
-            accent: Color(red: 0.10, green: 0.45, blue: 0.95),
-            mesh: [
-                Color(red: 0.86, green: 0.92, blue: 0.98), Color(red: 0.80, green: 0.89, blue: 0.99), Color(red: 0.88, green: 0.93, blue: 0.98),
-                Color(red: 0.82, green: 0.90, blue: 1.00), Color(red: 0.74, green: 0.86, blue: 1.00), Color(red: 0.85, green: 0.91, blue: 0.99),
-                Color(red: 0.90, green: 0.94, blue: 0.99), Color(red: 0.84, green: 0.91, blue: 0.99), Color(red: 0.92, green: 0.95, blue: 1.00)
-            ]
+            accent: Color(red: 0.10, green: 0.42, blue: 0.92),
+            mesh: Palette.sweep(
+                Color(red: 0.82, green: 0.90, blue: 0.99),
+                Color(red: 0.86, green: 0.94, blue: 0.99),
+                Color(red: 0.89, green: 0.89, blue: 0.99)
+            )
         ),
         double: Palette(
-            accent: Color(red: 0.95, green: 0.30, blue: 0.15),
-            mesh: [
-                Color(red: 1.00, green: 0.92, blue: 0.82), Color(red: 1.00, green: 0.88, blue: 0.74), Color(red: 1.00, green: 0.93, blue: 0.84),
-                Color(red: 1.00, green: 0.86, blue: 0.70), Color(red: 1.00, green: 0.80, blue: 0.62), Color(red: 1.00, green: 0.89, blue: 0.76),
-                Color(red: 1.00, green: 0.94, blue: 0.86), Color(red: 1.00, green: 0.90, blue: 0.80), Color(red: 1.00, green: 0.95, blue: 0.88)
-            ]
+            accent: Color(red: 0.92, green: 0.28, blue: 0.20),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.93, blue: 0.82),
+                Color(red: 1.00, green: 0.90, blue: 0.78),
+                Color(red: 1.00, green: 0.91, blue: 0.86)
+            )
         )
     )
 
-    /// Open sky: an airy aqua-blue noon that warms to soft gold. A calmer, more saturated
-    /// light theme than Daylight — less postcard-blue, more washed sunlight.
-    static let sky = Theme(
-        id: "sky",
-        name: "Sky",
-        half: Palette(
-            accent: Color(red: 0.00, green: 0.55, blue: 0.75),
-            mesh: [
-                Color(red: 0.80, green: 0.95, blue: 0.97), Color(red: 0.70, green: 0.93, blue: 0.98), Color(red: 0.83, green: 0.96, blue: 0.97),
-                Color(red: 0.72, green: 0.94, blue: 0.98), Color(red: 0.62, green: 0.91, blue: 0.97), Color(red: 0.78, green: 0.94, blue: 0.96),
-                Color(red: 0.84, green: 0.97, blue: 0.99), Color(red: 0.74, green: 0.93, blue: 0.97), Color(red: 0.87, green: 0.98, blue: 0.99)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.95, green: 0.62, blue: 0.05),
-            mesh: [
-                Color(red: 1.00, green: 0.95, blue: 0.80), Color(red: 1.00, green: 0.92, blue: 0.70), Color(red: 1.00, green: 0.96, blue: 0.82),
-                Color(red: 1.00, green: 0.90, blue: 0.66), Color(red: 1.00, green: 0.86, blue: 0.56), Color(red: 1.00, green: 0.93, blue: 0.74),
-                Color(red: 1.00, green: 0.96, blue: 0.84), Color(red: 1.00, green: 0.92, blue: 0.74), Color(red: 1.00, green: 0.97, blue: 0.86)
-            ]
-        )
-    )
-
-    /// Fresh mint: a pale cool green that turns to soft coral. A bright, clean light theme
-    /// built on a green base — the only one in the set that starts cool-green.
-    static let mint = Theme(
-        id: "mint",
-        name: "Mint",
-        half: Palette(
-            accent: Color(red: 0.10, green: 0.65, blue: 0.45),
-            mesh: [
-                Color(red: 0.86, green: 0.97, blue: 0.92), Color(red: 0.80, green: 0.97, blue: 0.89), Color(red: 0.88, green: 0.98, blue: 0.93),
-                Color(red: 0.82, green: 0.98, blue: 0.90), Color(red: 0.74, green: 0.96, blue: 0.86), Color(red: 0.85, green: 0.97, blue: 0.91),
-                Color(red: 0.89, green: 0.98, blue: 0.94), Color(red: 0.83, green: 0.97, blue: 0.91), Color(red: 0.91, green: 0.99, blue: 0.95)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.98, green: 0.40, blue: 0.40),
-            mesh: [
-                Color(red: 1.00, green: 0.92, blue: 0.86), Color(red: 1.00, green: 0.88, blue: 0.82), Color(red: 1.00, green: 0.93, blue: 0.87),
-                Color(red: 1.00, green: 0.89, blue: 0.83), Color(red: 1.00, green: 0.84, blue: 0.78), Color(red: 1.00, green: 0.91, blue: 0.85),
-                Color(red: 1.00, green: 0.94, blue: 0.88), Color(red: 1.00, green: 0.90, blue: 0.84), Color(red: 1.00, green: 0.95, blue: 0.90)
-            ]
-        )
-    )
-
-    /// Sand: a warm desert beige that deepens toward terracotta. A near-monochrome *warm*
-    /// light theme — earthy and quiet, the daylight cousin of Ember.
-    static let sand = Theme(
-        id: "sand",
-        name: "Sand",
-        half: Palette(
-            accent: Color(red: 0.80, green: 0.45, blue: 0.25),
-            mesh: [
-                Color(red: 0.96, green: 0.92, blue: 0.84), Color(red: 0.97, green: 0.90, blue: 0.80), Color(red: 0.96, green: 0.93, blue: 0.85),
-                Color(red: 0.97, green: 0.91, blue: 0.81), Color(red: 0.98, green: 0.88, blue: 0.76), Color(red: 0.96, green: 0.91, blue: 0.83),
-                Color(red: 0.97, green: 0.93, blue: 0.86), Color(red: 0.96, green: 0.91, blue: 0.82), Color(red: 0.98, green: 0.94, blue: 0.87)
-            ]
-        ),
-        double: Palette(
-            accent: Color(red: 0.85, green: 0.35, blue: 0.15),
-            mesh: [
-                Color(red: 0.94, green: 0.86, blue: 0.74), Color(red: 0.95, green: 0.83, blue: 0.69), Color(red: 0.94, green: 0.87, blue: 0.75),
-                Color(red: 0.95, green: 0.84, blue: 0.70), Color(red: 0.96, green: 0.80, blue: 0.63), Color(red: 0.94, green: 0.85, blue: 0.72),
-                Color(red: 0.95, green: 0.87, blue: 0.76), Color(red: 0.94, green: 0.84, blue: 0.71), Color(red: 0.96, green: 0.88, blue: 0.78)
-            ]
-        )
-    )
-
-    /// Bubblegum: soft lavender drifting to peachy coral. The gentle, low-contrast light
-    /// option — pastel and easy on the eyes, with the saturation nudged up so the hues
-    /// actually show through the legibility wash.
+    /// Bubblegum. FLIP: warm↔cool — a soft lavender→periwinkle that drifts to peachy coral.
+    /// The gentle, low-contrast pastel option, with an amethyst accent that warms to coral.
     static let bubblegum = Theme(
         id: "bubblegum",
         name: "Bubblegum",
         half: Palette(
-            accent: Color(red: 0.55, green: 0.35, blue: 0.95),
-            mesh: [
-                Color(red: 0.90, green: 0.84, blue: 0.99), Color(red: 0.93, green: 0.80, blue: 0.98), Color(red: 0.89, green: 0.85, blue: 0.99),
-                Color(red: 0.94, green: 0.81, blue: 0.98), Color(red: 0.97, green: 0.77, blue: 0.97), Color(red: 0.91, green: 0.83, blue: 0.99),
-                Color(red: 0.88, green: 0.86, blue: 0.99), Color(red: 0.92, green: 0.82, blue: 0.98), Color(red: 0.87, green: 0.88, blue: 1.00)
-            ]
+            accent: Color(red: 0.55, green: 0.35, blue: 0.92),
+            mesh: Palette.sweep(
+                Color(red: 0.90, green: 0.85, blue: 0.99),
+                Color(red: 0.93, green: 0.86, blue: 0.98),
+                Color(red: 0.88, green: 0.88, blue: 0.99)
+            )
         ),
         double: Palette(
-            accent: Color(red: 1.00, green: 0.42, blue: 0.52),
-            mesh: [
-                Color(red: 1.00, green: 0.86, blue: 0.84), Color(red: 1.00, green: 0.81, blue: 0.80), Color(red: 1.00, green: 0.87, blue: 0.85),
-                Color(red: 1.00, green: 0.80, blue: 0.79), Color(red: 1.00, green: 0.75, blue: 0.75), Color(red: 1.00, green: 0.83, blue: 0.82),
-                Color(red: 1.00, green: 0.88, blue: 0.86), Color(red: 1.00, green: 0.83, blue: 0.82), Color(red: 1.00, green: 0.89, blue: 0.87)
-            ]
+            accent: Color(red: 0.98, green: 0.42, blue: 0.50),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.87, blue: 0.85),
+                Color(red: 1.00, green: 0.83, blue: 0.82),
+                Color(red: 1.00, green: 0.89, blue: 0.88)
+            )
         )
     )
 }
