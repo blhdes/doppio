@@ -12,6 +12,10 @@ struct ContentView: View {
     /// Where the last-picked theme id is remembered between launches.
     private static let themeKey = "beatmch.theme"
 
+    /// The theme shown *before* the current one — kept so a shake skips it too, never
+    /// bouncing straight back (A → B → A). `nil` until the first switch this session.
+    @State private var previousThemeId: String? = nil
+
     /// The active beat motion — restored from last time, or Orbit on a fresh install. A
     /// two-finger tap cycles to the next one.
     @State private var beatStyle = BeatStyle(rawValue: UserDefaults.standard.string(forKey: ContentView.beatStyleKey) ?? "") ?? .orbit
@@ -370,14 +374,18 @@ struct ContentView: View {
     /// more dark themes than light ones — picking uniformly from the whole list would lean dark.
     private func nextTheme() -> Theme {
         let wantDark = Bool.random()
-        let sameSide = Theme.all.filter { $0.isDark == wantDark && $0.id != theme.id }
+        // Skip both the current theme and the one before it, so a shake never repeats
+        // (A → A) nor bounces straight back (A → B → A).
+        let avoid = Set([theme.id, previousThemeId].compactMap { $0 })
+        let sameSide = Theme.all.filter { $0.isDark == wantDark && !avoid.contains($0.id) }
         // Guard against an empty side (can't happen with today's set, but keeps a shake honest).
-        let pool = sameSide.isEmpty ? Theme.all.filter { $0.id != theme.id } : sameSide
+        let pool = sameSide.isEmpty ? Theme.all.filter { !avoid.contains($0.id) } : sameSide
         return pool.randomElement() ?? theme
     }
 
     /// Adopt a theme and remember it for next launch.
     private func commit(_ next: Theme) {
+        previousThemeId = theme.id      // the outgoing theme becomes the one to skip next time
         theme = next
         UserDefaults.standard.set(next.id, forKey: Self.themeKey)
     }
