@@ -53,6 +53,10 @@ struct Theme: Identifiable, Equatable {
     func palette(isDoubling: Bool) -> Palette {
         isDoubling ? double : half
     }
+
+    /// Whether this theme reads as dark overall — drives the 50/50 dark↔light split when
+    /// shuffling. Both palettes share a lightness, so the HALF palette decides it.
+    var isDark: Bool { half.prefersDarkUI }
 }
 
 extension Theme {

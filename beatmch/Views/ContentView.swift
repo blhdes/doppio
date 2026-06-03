@@ -12,6 +12,26 @@ struct ContentView: View {
     /// Where the last-picked theme id is remembered between launches.
     private static let themeKey = "beatmch.theme"
 
+    /// The active beat motion — restored from last time, or Orbit on a fresh install. A
+    /// two-finger tap cycles to the next one.
+    @State private var beatStyle = BeatStyle(rawValue: UserDefaults.standard.string(forKey: ContentView.beatStyleKey) ?? "") ?? .orbit
+    /// Where the last-picked beat style is remembered between launches.
+    private static let beatStyleKey = "beatmch.beatStyle"
+
+    /// Strength of the black cover that briefly hides the screen during a theme swap:
+    /// 0 = fully revealed, 1 = blacked out. The swap happens while it's at 1 so you never
+    /// see the old colours morph into the new ones — just a quick fade out, then fade in.
+    @State private var themeFade: Double = 0
+    /// True while a shake's fade is mid-flight, so a second shake waits its turn instead of
+    /// stacking a second blink on top of the first.
+    @State private var isSwitchingTheme = false
+
+    /// Whether the transient theme-name card is showing. It fades in with the new look on a
+    /// shake, lingers a beat, then fades away — a momentary "this is the theme" confirmation.
+    @State private var showThemeName = false
+    /// Pending "hide the name card" job; cancelled and restarted on every shake.
+    @State private var themeNameHide: Task<Void, Never>?
+
     // MARK: Drag state
     //
     // We read raw multi-touch through `SpatialEventGesture` (iOS 18+) so a second
@@ -76,7 +96,7 @@ struct ContentView: View {
 
             VStack(spacing: 24) {
                 Spacer(minLength: 0)
-                modePill
+                modeIndicator
                     .frame(height: 76)   // match the "from" row's band so the orb sits dead-centre between them
                 PulseOrb(
                     resultBPM: vm.result,
@@ -85,6 +105,7 @@ struct ContentView: View {
                     accent: accent,
                     ink: ink,
                     reduceMotion: reduceMotion,
+                    style: beatStyle,
                     isAdjusting: isDragging
                 )
                 sourceLine
@@ -108,6 +129,18 @@ struct ContentView: View {
                 .padding(.horizontal)
                 .allowsHitTesting(false)   // never blocks a swipe that starts near the bottom
         }
+        .overlay(alignment: .top) {
+            themeNameCard
+                .allowsHitTesting(false)   // a label, not a control
+        }
+        .overlay {
+            // The fade cover for shake-to-change-theme. Sits above everything so the swap is
+            // completely hidden at its peak; never intercepts touches.
+            Color.black
+                .opacity(themeFade)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
         .preferredColorScheme(palette.prefersDarkUI ? .dark : .light)
         .statusBarHidden(true)          // zero distractions — no clock, no battery
         .background(ShakeDetector(onShake: shuffleTheme))
@@ -116,22 +149,22 @@ struct ContentView: View {
 
     // MARK: - Subviews
 
-    /// The mode indicator — also the visible cue for the tap-to-flip gesture.
-    private var modePill: some View {
-        HStack(spacing: 8) {
+    /// The mode indicator — also the visible cue for the tap-to-flip gesture. No chip, no
+    /// ring: just quiet, wide-tracked type so it reads as a label rather than a control, and
+    /// lives in the same plane as everything else. The word stays dim ink; only the ×2 / ×½
+    /// takes the accent, so the colour is a small pop instead of a whole glowing outline.
+    private var modeIndicator: some View {
+        HStack(spacing: 6) {
             Text(vm.modeLabel)
-                .font(.headline.weight(.heavy))
-                .tracking(4)
+                .font(.subheadline.weight(.medium))
+                .tracking(5)
+                .foregroundStyle(ink.opacity(0.55))
             Text(vm.isDoubling ? "×2" : "×½")
-                .font(.headline.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
+                .foregroundStyle(accent)
         }
-        .foregroundStyle(ink)   // ink, not accent, so the label always contrasts the chip
         .contentTransition(.opacity)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
-        .glassSurface(in: Capsule())   // neutral glass tracks the background; accent stays the outline
-        .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
     }
 
     /// The tempo you dialled in — the "from X BPM" half of the relationship.
@@ -191,6 +224,24 @@ struct ContentView: View {
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
 
+    /// The transient name of the theme you just shook into. Borrows the mode-pill recipe
+    /// (neutral glass + faint accent outline + ink text) so it sits in the app's own language,
+    /// and only ever shows for a moment via `showThemeName`.
+    private var themeNameCard: some View {
+        Text(theme.name)
+            .font(.headline.weight(.heavy))
+            .tracking(4)
+            .textCase(.uppercase)
+            .foregroundStyle(ink)
+            .contentTransition(.opacity)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .glassSurface(in: Capsule())
+            .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
+            .opacity(showThemeName ? 1 : 0)
+            .padding(.top, 8)
+    }
+
     private var hint: some View {
         VStack(spacing: 6) {
             // Both messages always occupy their space; fine mode just cross-fades between
@@ -200,6 +251,7 @@ struct ContentView: View {
                     Text("Swipe up or down to set the tempo")
                     Text("Tap to flip ×2 / ×½")
                     Text("Hold a second finger to fine-tune")
+                    Text("Two-finger tap to change the beat")
                 }
                 .opacity(isFineMode ? 0 : 1)
 
@@ -260,16 +312,73 @@ struct ContentView: View {
 
     // MARK: - Theme
 
-    /// Shake handler: jump to a random *different* theme, remember it, and celebrate.
-    /// Filtering out the current theme guarantees every shake visibly changes something.
+    /// Shake handler: blink to a random *different* theme, remember it, and celebrate.
     private func shuffleTheme() {
-        let next = Theme.all.filter { $0.id != theme.id }.randomElement() ?? theme
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) {
-            theme = next
-        }
-        UserDefaults.standard.set(next.id, forKey: Self.themeKey)
+        guard !isSwitchingTheme else { return }   // let the current fade finish before the next
+        let next = nextTheme()
         haptics.shuffle()
         dismissHint()          // a shake is interaction too — hide, then re-arm the timer
+        scheduleHintReveal()
+
+        // Reduce Motion: skip the blink and swap straight away.
+        guard !reduceMotion else {
+            commit(next)
+            flashThemeName()
+            return
+        }
+
+        // Fade out, swap the whole look while it's hidden under black, then fade back in.
+        isSwitchingTheme = true
+        withAnimation(.easeIn(duration: 0.18)) {
+            themeFade = 1
+        } completion: {
+            commit(next)
+            flashThemeName()   // the name surfaces out of the black as the new theme reveals
+            withAnimation(.easeOut(duration: 0.40)) {
+                themeFade = 0
+            } completion: {
+                isSwitchingTheme = false
+            }
+        }
+    }
+
+    /// Briefly reveal the current theme's name, then fade it away. Restarted on every shake so
+    /// rapid switches always show the latest name rather than stacking timers.
+    private func flashThemeName() {
+        themeNameHide?.cancel()
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { showThemeName = true }
+        themeNameHide = Task { @MainActor in
+            do { try await Task.sleep(for: .seconds(1.4)) } catch { return }
+            withAnimation(reduceMotion ? nil : .easeIn(duration: 0.5)) { showThemeName = false }
+        }
+    }
+
+    /// Pick the next theme: flip a fair coin for dark↔light, then pick a random *different*
+    /// theme from that side. Coin-first keeps the split a true 50/50 even though there are
+    /// more dark themes than light ones — picking uniformly from the whole list would lean dark.
+    private func nextTheme() -> Theme {
+        let wantDark = Bool.random()
+        let sameSide = Theme.all.filter { $0.isDark == wantDark && $0.id != theme.id }
+        // Guard against an empty side (can't happen with today's set, but keeps a shake honest).
+        let pool = sameSide.isEmpty ? Theme.all.filter { $0.id != theme.id } : sameSide
+        return pool.randomElement() ?? theme
+    }
+
+    /// Adopt a theme and remember it for next launch.
+    private func commit(_ next: Theme) {
+        theme = next
+        UserDefaults.standard.set(next.id, forKey: Self.themeKey)
+    }
+
+    // MARK: - Beat style
+
+    /// Step to the next beat motion (Orbit → Ripple → Sweep → …) and remember it. A light
+    /// selection tick confirms the switch; the changed motion is its own visible feedback.
+    private func cycleBeatStyle() {
+        beatStyle = beatStyle.next
+        UserDefaults.standard.set(beatStyle.rawValue, forKey: Self.beatStyleKey)
+        haptics.tick()
+        dismissHint()
         scheduleHintReveal()
     }
 
@@ -394,11 +503,14 @@ struct ContentView: View {
         lastTick = tickIndex(vm.bpm, fine: fine)
     }
 
-    /// All fingers lifted. A still single-finger touch (never a real swipe) flips the mode.
+    /// All fingers lifted. A still single-finger touch (never a real swipe) flips the mode;
+    /// a still two-finger touch cycles the beat motion.
     private func endAdjust() {
         if !isDragging && maxTouches == 1 {
             withAnimation(.snappy) { vm.toggleMode() }
             haptics.toggle()
+        } else if !isDragging && maxTouches == 2 {
+            cycleBeatStyle()
         }
         landing.removeAll()
         anchorID = nil
