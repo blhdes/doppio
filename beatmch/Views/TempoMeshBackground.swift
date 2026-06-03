@@ -5,7 +5,7 @@ import SwiftUI
 /// The hue leans cool/cyan in HALF mode and warm/amber in DOUBLE mode, crossfading
 /// when you flip. The drift is gentle (one wandering centre point); under Reduce
 /// Motion the whole thing freezes to a single static frame.
-struct TempoMeshBackground: View {
+struct TempoMeshBackground: View, Equatable {
     /// The active theme — supplies both the HALF and DOUBLE mesh palettes so the
     /// flip can crossfade between them.
     let theme: Theme

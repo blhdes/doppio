@@ -17,6 +17,9 @@ struct PulseOrb: View {
     /// Text colour for the big number — light on dark themes, dark on light ones.
     let ink: Color
     let reduceMotion: Bool
+    /// True while the user is actively setting the tempo — suppresses the digit-roll so the
+    /// rapidly-changing number doesn't flash through dozens of stacked transitions.
+    let isAdjusting: Bool
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
@@ -43,7 +46,7 @@ struct PulseOrb: View {
                         .font(.system(size: 96, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(ink)
-                        .contentTransition(.numericText(value: resultBPM))
+                        .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
 

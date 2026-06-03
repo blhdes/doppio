@@ -18,8 +18,9 @@ struct ContentView: View {
     // finger held on screen can switch the swipe into a slow, decimal-precise mode.
 
     /// Where each finger currently on glass first landed — used to spot the first one
-    /// that actually moves, which becomes the steering finger for the whole gesture.
-    @State private var landingY: [SpatialEventCollection.Event.ID: CGFloat] = [:]
+    /// that actually moves (the steering finger), and to tell a drag that began on the
+    /// pitch bar from one that began anywhere else.
+    @State private var landing: [SpatialEventCollection.Event.ID: CGPoint] = [:]
     /// The steering finger the BPM math is measured from. Locked once a drag starts.
     @State private var anchorID: SpatialEventCollection.Event.ID?
     /// BPM at the moment we last (re)anchored — dragging is relative to this.
@@ -34,6 +35,12 @@ struct ContentView: View {
     @State private var isDragging = false
     /// True while a second finger is held — the swipe moves ~10× slower.
     @State private var isFineMode = false
+    /// True while the active drag began on the right pitch bar — the BPM then follows the
+    /// finger's position directly instead of using the relative swipe maths.
+    @State private var isBarDrag = false
+    /// Size of the gesture surface, captured live so we can locate the pitch bar in the
+    /// same coordinates the touches arrive in.
+    @State private var containerSize: CGSize = .zero
 
     // MARK: Hint visibility
     //
@@ -56,35 +63,50 @@ struct ContentView: View {
     private let dragDeadZone: CGFloat = 8
     /// How long the screen must stay untouched before the hint drifts back in.
     private let hintIdleDelay: Duration = .seconds(45)
+    /// Geometry of the right-edge pitch bar — shared by the drawing and the hit test so a
+    /// drag that starts on the bar maps onto exactly the marks you see.
+    private let scaleWidth: CGFloat = 46
+    private let scaleHeight: CGFloat = 320
+    private let scaleTrailingPad: CGFloat = 10
 
     var body: some View {
         ZStack {
             TempoMeshBackground(theme: theme, isDoubling: vm.isDoubling, reduceMotion: reduceMotion)
+                .equatable()   // BPM drags don't change it — skip re-layout so it never resizes mid-swipe
 
             VStack(spacing: 24) {
                 Spacer(minLength: 0)
                 modePill
+                    .frame(height: 76)   // match the "from" row's band so the orb sits dead-centre between them
                 PulseOrb(
                     resultBPM: vm.result,
                     sourceBPM: vm.bpm,
                     displayText: Self.format(vm.result),
                     accent: accent,
                     ink: ink,
-                    reduceMotion: reduceMotion
+                    reduceMotion: reduceMotion,
+                    isAdjusting: isDragging
                 )
                 sourceLine
                 Spacer(minLength: 0)
-                hint
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onGeometryChange(for: CGSize.self, of: { $0.size }, action: { containerSize = $0 })
             .contentShape(Rectangle())          // whole screen reacts to touch
-            .gesture(adjustGesture)             // one gesture handles swipe, fine-tune, and tap
+            .gesture(adjustGesture)             // one gesture handles swipe, drag-the-bar, fine-tune, and tap
 
             swipeScale
-                .opacity(isDragging ? 1 : 0)
+                .opacity(isDragging ? 1 : 0.22)   // a faint live readout at rest; a grab target you can drag
                 .animation(.easeOut(duration: 0.25), value: isDragging)
-                .allowsHitTesting(false)        // purely visual — never blocks the swipe
+                .allowsHitTesting(false)          // the shared gesture reads it; this layer never blocks touch
+        }
+        .overlay(alignment: .bottom) {
+            // The hint floats over the bottom rather than sitting in the VStack flow — so when
+            // it's faded out it reserves no space, and the orb cluster stays truly centred.
+            hint
+                .padding(.horizontal)
+                .allowsHitTesting(false)   // never blocks a swipe that starts near the bottom
         }
         .preferredColorScheme(palette.prefersDarkUI ? .dark : .light)
         .statusBarHidden(true)          // zero distractions — no clock, no battery
@@ -121,27 +143,50 @@ struct ContentView: View {
     /// number grows in place — and `zIndex` keeps it above the orb's pulsing rings, which
     /// render beyond their frame and would otherwise clip its top.
     private var sourceLine: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Text("from")
                 .foregroundStyle(ink.opacity(0.6))
-            Text(Self.format(vm.bpm))
+            // The number grows from its centre, not the baseline. Two layers cooperate:
+            //  • A hidden "000.0" template — sized to the widest value — alone defines the slot.
+            //    Its font animates 18↔46 so the row reflows (tight at rest, roomy mid-drag) and
+            //    "from"/"BPM" make room. It's the fixed-width slot that keeps content-width changes
+            //    (2↔3 digits, the decimal appearing in fine mode) from bumping the labels — and
+            //    being hidden, the baseline-anchored way an animated font grows is never seen.
+            //  • The visible number is drawn once at the large size and *scaled* about its centre,
+            //    so it swells symmetrically from the middle and stays crisp (a big glyph scaled
+            //    down, never a small one scaled up and blurred). Centred in the slot, its own width
+            //    changes spread evenly about the middle, so the digits never bump sideways either.
+            Text("000.0")
                 .font(.system(size: isDragging ? 46 : 18, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(isDragging ? accent : ink.opacity(0.9))
-                .contentTransition(.numericText(value: vm.bpm))
+                .hidden()
+                .overlay {
+                    // Roll the digits only for occasional changes (a tap-flip). While dragging, the
+                    // value changes every tick — animating each one stacks into a flashing blur.
+                    Text(Self.format(vm.bpm))
+                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(isDragging ? accent : ink.opacity(0.9))
+                        .fixedSize()
+                        .scaleEffect(isDragging ? 1 : 18.0 / 46.0, anchor: .center)
+                        .contentTransition(isDragging ? .identity : .numericText(value: vm.bpm))
+                }
             Text("BPM")
                 .foregroundStyle(ink.opacity(0.6))
         }
         .font(.system(size: 18, weight: .medium, design: .rounded))
-        .padding(.horizontal, isDragging ? 22 : 0)
-        .padding(.vertical, isDragging ? 9 : 0)
+        .frame(height: 76)   // generous constant band: no orb shift
         .background {
-            // Faint accent glass, only while dragging — fades via opacity so it never pops.
+            // A FIXED-size glass capsule. Its geometry never tracks the number's width, so it
+            // can't resize or flash as the value changes each tick mid-drag. Neutral glass + a
+            // faint accent outline (the mode-pill recipe) — a *tinted* fill rendered as a solid
+            // accent blob on the iOS 26.2 SDK and swallowed the number. Fades via opacity.
             Color.clear
-                .glassSurface(in: Capsule(), tint: accent)
+                .frame(width: 260, height: 60)
+                .glassSurface(in: Capsule())
+                .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
                 .opacity(isDragging ? 1 : 0)
         }
-        .frame(height: 76)   // generous constant band: no orb shift, room for the capsule
         .zIndex(1)           // stay above the orb's pulse, which draws past its own frame
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
@@ -175,8 +220,9 @@ struct ContentView: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isFineMode)
     }
 
-    /// A faint vertical tick scale showing where the current BPM sits in the
-    /// 20–300 range, with an accent marker. Only visible mid-swipe.
+    /// A vertical tick scale showing where the current BPM sits in the 20–300 range, with an
+    /// accent marker. Faint at rest — a live position readout you can also grab and drag —
+    /// and full-strength mid-drag.
     private var swipeScale: some View {
         let frac = (vm.bpm - vm.minBPM) / (vm.maxBPM - vm.minBPM)
         return Canvas { ctx, size in
@@ -202,9 +248,9 @@ struct ContentView: View {
             ctx.fill(Circle().path(in: CGRect(x: -dot / 2, y: markerY - dot / 2, width: dot, height: dot)),
                      with: .color(accent))
         }
-        .frame(width: 46)
-        .frame(maxWidth: .infinity, maxHeight: 320, alignment: .trailing)
-        .padding(.trailing, 10)
+        .frame(width: scaleWidth)
+        .frame(maxWidth: .infinity, maxHeight: scaleHeight, alignment: .trailing)
+        .padding(.trailing, scaleTrailingPad)
     }
 
     /// The palette to paint right now — depends on the live HALF/DOUBLE mode.
@@ -265,13 +311,31 @@ struct ContentView: View {
         // Remember where each finger landed; forget any that have lifted. Both writes are gated
         // so a steady drag (no finger added or lifted) doesn't reassign @State every tick — with
         // setBPM also guarded, body then re-evaluates only when the BPM moves, not per touch event.
-        if landingY.contains(where: { byID[$0.key] == nil }) {
-            landingY = landingY.filter { byID[$0.key] != nil }
+        if landing.contains(where: { byID[$0.key] == nil }) {
+            landing = landing.filter { byID[$0.key] != nil }
         }
-        for event in active where landingY[event.id] == nil { landingY[event.id] = event.location.y }
+        for event in active where landing[event.id] == nil { landing[event.id] = event.location }
         guard !active.isEmpty else { return }
         dismissHint()   // any touch means "I'm working" — clear the instructions
         if active.count > maxTouches { maxTouches = active.count }
+
+        // Absolute pitch bar takes priority. A drag that *began* on the right bar moves the BPM
+        // straight to the finger — no swipe maths. Everything else keeps the relative swipe.
+        if isBarDrag {
+            if let driver = anchorID.flatMap({ byID[$0] }) {
+                trackBar(driver)
+                return
+            }
+            // The bar finger lifted: drop bar mode and let any remaining finger resume a swipe
+            // from where it sits now (re-baseline so it isn't treated as already-moved).
+            isBarDrag = false
+            anchorID = nil
+            for event in active { landing[event.id] = event.location }
+        } else if !isDragging, let driver = active.first(where: { landedInBar($0) }) {
+            beginBarDrag(driver)
+            trackBar(driver)
+            return
+        }
 
         // A second finger anywhere means fine mode — it only slows the swipe, never steers.
         let fine = active.count >= 2
@@ -281,7 +345,7 @@ struct ContentView: View {
         // even while another finger keeps holding — instead of getting stuck on the held one.
         if let steering = anchorID, byID[steering] == nil {
             anchorID = nil
-            for event in active { landingY[event.id] = event.location.y }
+            for event in active { landing[event.id] = event.location }
         }
 
         // Choose the steering finger:
@@ -318,7 +382,7 @@ struct ContentView: View {
 
     /// Has this finger moved far enough from where it landed to count as a swipe?
     private func movedPastDeadZone(_ event: SpatialEventCollection.Event) -> Bool {
-        abs(event.location.y - (landingY[event.id] ?? event.location.y)) >= dragDeadZone
+        abs(event.location.y - (landing[event.id] ?? event.location).y) >= dragDeadZone
     }
 
     /// Pin the BPM math to the steering finger's current spot, with no value jump.
@@ -336,10 +400,11 @@ struct ContentView: View {
             withAnimation(.snappy) { vm.toggleMode() }
             haptics.toggle()
         }
-        landingY.removeAll()
+        landing.removeAll()
         anchorID = nil
         isDragging = false
         isFineMode = false
+        isBarDrag = false
         maxTouches = 0
         scheduleHintReveal()   // start the quiet-time countdown that brings the hint back
     }
@@ -347,6 +412,48 @@ struct ContentView: View {
     /// Which "notch" a BPM sits on: whole numbers normally, tenths in fine mode.
     private func tickIndex(_ bpm: Double, fine: Bool) -> Int {
         fine ? Int((bpm * 10).rounded()) : Int(bpm.rounded())
+    }
+
+    // MARK: - Pitch bar (absolute)
+
+    /// Did this finger land inside the right-edge pitch bar? Only a drag that *starts* there
+    /// switches to direct, follow-the-finger control; everything else stays a relative swipe.
+    private func landedInBar(_ event: SpatialEventCollection.Event) -> Bool {
+        guard containerSize.width > 0 else { return false }
+        let p = landing[event.id] ?? event.location
+        let barHeight = min(containerSize.height, scaleHeight)
+        let topY = (containerSize.height - barHeight) / 2
+        let left = containerSize.width - (scaleWidth + scaleTrailingPad)
+        return p.x >= left && p.y >= topY && p.y <= topY + barHeight
+    }
+
+    /// Map a finger's Y on the bar straight to a BPM: top of the bar = max, bottom = min —
+    /// the same mapping the visible marker uses, so the mark sits under your fingertip.
+    private func bpmForBarY(_ y: CGFloat) -> Double {
+        let barHeight = min(containerSize.height, scaleHeight)
+        guard barHeight > 0 else { return vm.bpm }
+        let topY = (containerSize.height - barHeight) / 2
+        let frac = min(max(1 - (y - topY) / barHeight, 0), 1)
+        return vm.minBPM + frac * (vm.maxBPM - vm.minBPM)
+    }
+
+    /// Lock this finger as an absolute bar drag (always coarse — direct control, never fine).
+    private func beginBarDrag(_ driver: SpatialEventCollection.Event) {
+        isDragging = true
+        isBarDrag = true
+        isFineMode = false
+        anchorID = driver.id
+        lastTick = tickIndex(vm.bpm, fine: false)
+    }
+
+    /// Move the BPM to wherever the bar finger sits now, ticking once per whole BPM crossed.
+    private func trackBar(_ driver: SpatialEventCollection.Event) {
+        vm.setBPM(bpmForBarY(driver.location.y))
+        let tick = tickIndex(vm.bpm, fine: false)
+        if tick != lastTick {
+            lastTick = tick
+            haptics.tick()
+        }
     }
 
     // MARK: - Helpers
