@@ -35,7 +35,7 @@ This project has no committed `.xcodeproj` — it's generated from `project.yml`
 with [xcodegen](https://github.com/yonsm/XcodeGen):
 
 ```bash
-cd beatmch             # the repo folder keeps the old name for now
+cd doppio
 xcodegen generate      # creates Doppio.xcodeproj
 open Doppio.xcodeproj
 ```
