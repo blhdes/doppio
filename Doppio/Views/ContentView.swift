@@ -363,11 +363,11 @@ struct ContentView: View {
         }
     }
 
-    /// Pick the next theme: flip a fair coin for dark↔light, then pick a random *different*
-    /// theme from that side. Coin-first keeps the split a true 50/50 even though there are
-    /// more dark themes than light ones — picking uniformly from the whole list would lean dark.
+    /// Pick the next theme: always cross to the *other* side of dark↔light, then pick a
+    /// random different theme from there. Every shake flips the whole mood — light → dark
+    /// → light — so the change always reads big, never a sideways shuffle within one mood.
     private func nextTheme() -> Theme {
-        let wantDark = Bool.random()
+        let wantDark = !theme.isDark
         // Skip both the current theme and the one before it, so a shake never repeats
         // (A → A) nor bounces straight back (A → B → A).
         let avoid = Set([theme.id, previousThemeId].compactMap { $0 })
