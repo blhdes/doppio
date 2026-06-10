@@ -18,7 +18,7 @@ struct ContentView: View {
 
     /// The active beat motion — restored from last time, or Orbit on a fresh install. A
     /// two-finger tap cycles to the next one.
-    @State private var beatStyle = BeatStyle(rawValue: UserDefaults.standard.string(forKey: ContentView.beatStyleKey) ?? "") ?? .orbit
+    @State private var beatStyle = BeatStyle(rawValue: UserDefaults.standard.string(forKey: ContentView.beatStyleKey) ?? "") ?? .pulse
     /// Where the last-picked beat style is remembered between launches.
     private static let beatStyleKey = "beatmch.beatStyle"
 
@@ -397,9 +397,11 @@ struct ContentView: View {
     // MARK: - Beat style
 
     /// Step to the next beat motion (Orbit → Ripple → Sweep → Pulse → Bare → …) and remember it. A light
-    /// selection tick confirms the switch; the changed motion is its own visible feedback.
+    /// selection tick confirms the switch; the changed motion crossfades in as its own visible feedback.
     private func cycleBeatStyle() {
-        beatStyle = beatStyle.next
+        withAnimation(.easeInOut(duration: 0.35)) {
+            beatStyle = beatStyle.next
+        }
         UserDefaults.standard.set(beatStyle.rawValue, forKey: Self.beatStyleKey)
         haptics.tick()
         dismissHint()

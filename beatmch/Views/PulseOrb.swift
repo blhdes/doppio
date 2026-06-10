@@ -54,105 +54,117 @@ struct PulseOrb: View {
     private let outerR: CGFloat = 150   // source-tempo radius (fainter)
     private let innerR: CGFloat = 118   // result-tempo radius (bolder)
 
+    // The shared ring language: hairline strokes everywhere, with brightness — not
+    // thickness — telling the two rhythms apart. Result reads bolder, source fainter.
+    private let hairline: CGFloat = 1
+    private let sourceGuide = 0.10      // resting opacity of source-tempo guide rings
+    private let resultGuide = 0.16      // resting opacity of result-tempo guide rings
+    private let sourceLive = 0.50       // moving source elements (dot, comet)
+
     var body: some View {
-        // The bare state never animates, so freeze the timeline to a single static frame —
-        // no 30fps loop running just to hold a still number.
-        TimelineView(.animation(minimumInterval: style == .bare ? .infinity : 1.0 / 30.0)) { timeline in
+        // The number lives *outside* the timeline: it depends only on the BPM, so it's
+        // diffed when the value changes, not 30 times a second. The 30fps loop is scoped
+        // to the motion layer alone — and in the bare state no timeline exists at all.
+        ZStack {
+            if style != .bare {
+                motionLayer
+                    // Each style is its own view identity, so an animated style change
+                    // crossfades the old drawing into the new one instead of snapping.
+                    .id(style)
+                    .transition(.opacity)
+            }
+
+            // The number stands alone in the ZStack so it always shares the rings'
+            // exact centre.
+            Text(displayText)
+                .font(.system(size: 96, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(ink)
+                .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+                .frame(width: 230)
+        }
+        .frame(width: 320, height: 320)
+    }
+
+    /// The animated beat drawing — everything that re-renders per frame. Under Reduce
+    /// Motion the drawing holds still and two dots blink (opacity only) on each beat,
+    /// offset downward so they sit below the number instead of pushing it off-centre.
+    private var motionLayer: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            let resultPulse = beat(bpm: resultBPM, at: t)
-            let sourcePulse = beat(bpm: sourceBPM, at: t)
 
-            ZStack {
-                if style != .bare {
-                    if reduceMotion {
-                        // Motion off: two still guide rings keep the orb's identity.
-                        Circle().strokeBorder(accent.opacity(0.18), lineWidth: 1.5).frame(width: outerR * 2)
-                        Circle().strokeBorder(accent.opacity(0.30), lineWidth: 1.5).frame(width: innerR * 2)
-                    } else {
-                        Canvas { ctx, size in
-                            draw(in: &ctx, size: size,
-                                 resultPhase: phase(bpm: resultBPM, at: t),
-                                 sourcePhase: phase(bpm: sourceBPM, at: t),
-                                 resultBeat: resultPulse,
-                                 sourceBeat: sourcePulse)
-                        }
-                        .frame(width: canvasSize, height: canvasSize)
-                        .allowsHitTesting(false)
-                    }
-                }
-
-                // The number stands alone in the ZStack so it always shares the rings'
-                // exact centre. The Reduce-Motion blink dots are a separate layer, offset
-                // downward — they sit below the number instead of pushing it up off-centre.
-                Text(displayText)
-                    .font(.system(size: 96, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(ink)
-                    .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                    .frame(width: 230)
-
-                if reduceMotion && style != .bare {
+            if reduceMotion {
+                ZStack {
+                    // Motion off: two still guide rings keep the orb's identity.
+                    Circle().strokeBorder(accent.opacity(0.18), lineWidth: hairline).frame(width: outerR * 2)
+                    Circle().strokeBorder(accent.opacity(0.30), lineWidth: hairline).frame(width: innerR * 2)
                     HStack(spacing: 10) {
                         Circle().fill(accent)
                             .frame(width: 8, height: 8)
-                            .opacity(0.2 + 0.8 * resultPulse)
+                            .opacity(0.2 + 0.8 * beat(bpm: resultBPM, at: t))
                         Circle().fill(accent.opacity(0.55))
                             .frame(width: 8, height: 8)
-                            .opacity(0.15 + 0.7 * sourcePulse)
+                            .opacity(0.15 + 0.7 * beat(bpm: sourceBPM, at: t))
                     }
                     .offset(y: 76)
                 }
+            } else {
+                Canvas { ctx, size in
+                    draw(in: &ctx, size: size, at: t)
+                }
+                .frame(width: canvasSize, height: canvasSize)
+                .allowsHitTesting(false)
             }
         }
-        .frame(width: 320, height: 320)
     }
 
     // MARK: - Drawing
 
     /// Paint the active style. Each style carries its own beat feedback through its motion —
     /// there's no shared behind-the-number bloom, which popped in on every completed circle.
-    private func draw(in ctx: inout GraphicsContext, size: CGSize,
-                      resultPhase: Double, sourcePhase: Double,
-                      resultBeat: Double, sourceBeat: Double) {
+    /// Each case derives exactly the timing inputs it uses (phase or envelope) from `t`.
+    private func draw(in ctx: inout GraphicsContext, size: CGSize, at t: TimeInterval) {
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
 
         switch style {
         case .orbit:
-            strokeRing(&ctx, c, outerR, accent.opacity(0.10), 1.5)
-            strokeRing(&ctx, c, innerR, accent.opacity(0.14), 1.5)
-            orbitDot(&ctx, c, outerR, sourcePhase, accent.opacity(0.55), dot: 7, glow: 15)
-            orbitDot(&ctx, c, innerR, resultPhase, accent, dot: 10, glow: 22)
+            strokeRing(&ctx, c, outerR, accent.opacity(sourceGuide), hairline)
+            strokeRing(&ctx, c, innerR, accent.opacity(resultGuide), hairline)
+            orbitDot(&ctx, c, outerR, phase(bpm: sourceBPM, at: t), accent.opacity(sourceLive), dot: 5, glow: 10)
+            orbitDot(&ctx, c, innerR, phase(bpm: resultBPM, at: t), accent, dot: 7, glow: 14)
 
         case .ripple:
             // Honest one-ripple-per-beat at the real tempo; the brightness swells in then
             // out across the beat (see `ripples`) so fast beats read as a pulse, not a flash.
-            ripples(&ctx, c, sourcePhase, accent, strength: 0.40)
-            ripples(&ctx, c, resultPhase, accent, strength: 0.85)
+            ripples(&ctx, c, phase(bpm: sourceBPM, at: t), accent, strength: 0.40)
+            ripples(&ctx, c, phase(bpm: resultBPM, at: t), accent, strength: 0.85)
 
         case .sweep:
             // One turn per beat at the real tempo. The trail lengthens with speed (honest
             // motion blur), so quick tempos smear into a smooth ring instead of strobing.
-            strokeRing(&ctx, c, outerR, accent.opacity(0.10), 1.5)
-            strokeRing(&ctx, c, innerR, accent.opacity(0.14), 1.5)
-            sweepArc(&ctx, c, outerR, sourcePhase, accent.opacity(0.55), width: 3, span: sweepSpan(bpm: sourceBPM))
-            sweepArc(&ctx, c, innerR, resultPhase, accent, width: 4, span: sweepSpan(bpm: resultBPM))
+            strokeRing(&ctx, c, outerR, accent.opacity(sourceGuide), hairline)
+            strokeRing(&ctx, c, innerR, accent.opacity(resultGuide), hairline)
+            sweepArc(&ctx, c, outerR, phase(bpm: sourceBPM, at: t), accent.opacity(sourceLive), width: 1.5, span: sweepSpan(bpm: sourceBPM))
+            sweepArc(&ctx, c, innerR, phase(bpm: resultBPM, at: t), accent, width: 2, span: sweepSpan(bpm: resultBPM))
 
         case .pulse:
             // The original look: two rings breathing in and out on the beat. The faint
             // outer ring rides the source tempo; the bold inner ring (result) swells more
-            // and carries a glow that brightens right on each beat, then fades.
-            let outer = outerR * (1 + 0.05 * sourceBeat)
-            let inner = innerR * (1 + 0.09 * resultBeat)
-            strokeRing(&ctx, c, outer, accent.opacity(0.22), 2)
+            // and carries a glow that brightens right on each beat, then fades. The swell
+            // and glow stay small on purpose — the beat should whisper, not flash.
+            let outer = outerR * (1 + 0.04 * beat(bpm: sourceBPM, at: t))
+            let resultBeat = beat(bpm: resultBPM, at: t)
+            let inner = innerR * (1 + 0.06 * resultBeat)
+            strokeRing(&ctx, c, outer, accent.opacity(0.18), hairline)
             ctx.drawLayer { layer in
-                layer.addFilter(.shadow(color: accent.opacity(0.5 * resultBeat), radius: 18))
-                layer.stroke(circlePath(c, inner), with: .color(accent.opacity(0.85)), lineWidth: 3)
+                layer.addFilter(.shadow(color: accent.opacity(0.35 * resultBeat), radius: 10))
+                layer.stroke(circlePath(c, inner), with: .color(accent.opacity(0.85)), lineWidth: 1.5)
             }
 
         case .bare:
-            break   // nothing to draw — the Canvas isn't even mounted in this state
+            break   // unreachable — the motion layer isn't mounted in the bare state
         }
     }
 
@@ -167,24 +179,25 @@ struct PulseOrb: View {
     }
 
     /// A comet whose bright leading edge sits at `phase` and fades into a tail of length
-    /// `span` radians behind it. Built from short chords so the opacity ramp stays clean.
+    /// `span` radians behind it: one arc stroked with a conic gradient whose ramp runs
+    /// clear at the tail → full at the head, then cuts off so nothing paints past the lead.
     private func sweepArc(_ ctx: inout GraphicsContext, _ c: CGPoint, _ r: CGFloat,
                           _ phase: Double, _ color: Color, width: CGFloat, span: Double) {
         let lead = angle(phase)
-        let segments = 36
-        var prev = point(c, r, lead - span)
-        for i in 1...segments {
-            let f = Double(i) / Double(segments)      // 0 at tail → 1 at head
-            let pt = point(c, r, lead - span * (1 - f))
-            var seg = Path()
-            seg.move(to: prev)
-            seg.addLine(to: pt)
-            ctx.stroke(seg, with: .color(color.opacity(f)),
-                       style: StrokeStyle(lineWidth: width, lineCap: .round))
-            prev = pt
-        }
-        // Bright head to anchor the leading edge.
-        ctx.fill(circlePath(prev, width), with: .color(color))
+        let tail = lead - span
+        var arc = Path()
+        arc.addArc(center: c, radius: r,
+                   startAngle: .radians(tail), endAngle: .radians(lead), clockwise: false)
+        let head = span / (2 * .pi)   // the head's fraction of the gradient's full turn
+        let ramp = Gradient(stops: [
+            .init(color: color.opacity(0), location: 0),
+            .init(color: color, location: head),
+            .init(color: color.opacity(0), location: min(head + 0.001, 1)),
+        ])
+        ctx.stroke(arc, with: .conicGradient(ramp, center: c, angle: .radians(tail)),
+                   style: StrokeStyle(lineWidth: width, lineCap: .round))
+        // Bright head to anchor the leading edge (also covers the cut-off head cap).
+        ctx.fill(circlePath(point(c, r, lead), width), with: .color(color))
     }
 
     /// Two rings per tempo, born at the centre and expanding outward — offset half a beat
@@ -198,7 +211,7 @@ struct PulseOrb: View {
             let age = (phase + offset).truncatingRemainder(dividingBy: 1)
             let r = r0 + CGFloat(age) * (rMax - r0)
             let fade = sin(.pi * age) * strength      // 0 → peak → 0 across the beat
-            strokeRing(&ctx, c, r, color.opacity(fade), 1.0 + CGFloat(1 - age) * 1.5)
+            strokeRing(&ctx, c, r, color.opacity(fade), 0.75 + CGFloat(1 - age) * 0.75)
         }
     }
 
@@ -224,12 +237,18 @@ struct PulseOrb: View {
 
     // MARK: - Timing
 
-    /// Beat envelope: a sharp spike at each beat onset that decays before the next.
-    /// Returns ~1 right on the beat, falling toward 0 in between.
+    /// Beat envelope: ~1 right on the beat, falling toward 0 in between. The onset is a
+    /// short smoothed rise rather than an instantaneous jump, so the pulse breathes in
+    /// before it decays — organic instead of clicky.
     private func beat(bpm: Double, at t: TimeInterval) -> Double {
         guard bpm > 0 else { return 0 }
         let phase = (t * bpm / 60).truncatingRemainder(dividingBy: 1)
-        return exp(-phase * 6.5)
+        let attack = 0.06
+        if phase < attack {
+            let f = phase / attack
+            return f * f * (3 - 2 * f)    // smoothstep up to the peak
+        }
+        return exp(-(phase - attack) / (1 - attack) * 5.5)
     }
 
     /// Where we are within the current beat: 0 at the onset, climbing toward 1 just before
