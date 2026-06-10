@@ -28,8 +28,8 @@ final class BPMViewModel {
 
     // MARK: Persistence keys
 
-    private let bpmKey = "beatmch.bpm"
-    private let modeKey = "beatmch.isDoubling"
+    private let bpmKey = "doppio.bpm"
+    private let modeKey = "doppio.isDoubling"
 
     init() {
         let defaults = UserDefaults.standard

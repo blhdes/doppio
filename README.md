@@ -1,6 +1,8 @@
-# beatmch
+# Doppio
 
 A minimalist iOS BPM half-time / double-time tool for DJs — a living metronome, not a calculator.
+
+Named after *doppio movimento*, the score marking for "play twice as fast" — with a nod to the double espresso.
 
 ## Setting the tempo
 
@@ -13,10 +15,10 @@ A minimalist iOS BPM half-time / double-time tool for DJs — a living metronome
 - The big number shows **half** of your source BPM by default; a **single tap** flips to **double** (e.g. for the drop). Tap again to go back.
 - The motion always speaks two rhythms at once — the **result** tempo (bold) and your **source** tempo (faint) — so you can *see* the half/double relationship as two overlapping rates.
 - **Two-finger tap** cycles the beat style; the choice is remembered:
-  - **Orbit** *(default)* — a glowing dot circles each ring once per beat, a metronome bent into a circle.
+  - **Orbit** — a glowing dot circles each ring once per beat, a metronome bent into a circle.
   - **Ripple** — each beat is born at the centre and expands outward as a fading ring.
   - **Sweep** — a bright arc sweeps around each ring once per beat, like radar.
-  - **Pulse** — two concentric rings breathe in and out on the beat, the inner one glowing.
+  - **Pulse** *(default)* — two concentric rings breathe in and out on the beat, the inner one glowing.
   - **Bare** — nothing at all, just the number.
 
 ## Look & feel
@@ -33,9 +35,9 @@ This project has no committed `.xcodeproj` — it's generated from `project.yml`
 with [xcodegen](https://github.com/yonsm/XcodeGen):
 
 ```bash
-cd beatmch
-xcodegen generate      # creates beatmch.xcodeproj
-open beatmch.xcodeproj
+cd beatmch             # the repo folder keeps the old name for now
+xcodegen generate      # creates Doppio.xcodeproj
+open Doppio.xcodeproj
 ```
 
 Then press ▶ (set your signing team under *Signing & Capabilities* first if
@@ -47,8 +49,8 @@ back to a frosted material on iOS 18–25.
 ## Layout
 
 ```
-beatmch/
-├── BeatmchApp.swift                  # app entry point
+Doppio/
+├── DoppioApp.swift                   # app entry point
 ├── Views/
 │   ├── ContentView.swift             # the whole screen: gestures, themes, composes the pieces
 │   ├── PulseOrb.swift                # the beating hero: steady number + the five beat styles

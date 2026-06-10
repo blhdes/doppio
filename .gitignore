@@ -30,5 +30,5 @@ Package.resolved
 xcuserdata/
 
 # xcodegen output (regenerate with: xcodegen generate)
-beatmch.xcodeproj/
+Doppio.xcodeproj/
 Info.plist

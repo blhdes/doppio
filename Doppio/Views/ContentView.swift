@@ -10,7 +10,7 @@ struct ContentView: View {
     @State private var theme = Theme.named(UserDefaults.standard.string(forKey: ContentView.themeKey))
 
     /// Where the last-picked theme id is remembered between launches.
-    private static let themeKey = "beatmch.theme"
+    private static let themeKey = "doppio.theme"
 
     /// The theme shown *before* the current one — kept so a shake skips it too, never
     /// bouncing straight back (A → B → A). `nil` until the first switch this session.
@@ -20,7 +20,7 @@ struct ContentView: View {
     /// two-finger tap cycles to the next one.
     @State private var beatStyle = BeatStyle(rawValue: UserDefaults.standard.string(forKey: ContentView.beatStyleKey) ?? "") ?? .pulse
     /// Where the last-picked beat style is remembered between launches.
-    private static let beatStyleKey = "beatmch.beatStyle"
+    private static let beatStyleKey = "doppio.beatStyle"
 
     /// Strength of the black cover that briefly hides the screen during a theme swap:
     /// 0 = fully revealed, 1 = blacked out. The swap happens while it's at 1 so you never

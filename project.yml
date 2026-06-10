@@ -1,4 +1,4 @@
-name: beatmch
+name: Doppio
 options:
   bundleIdPrefix: agu
   createIntermediateGroups: true
@@ -10,22 +10,22 @@ settings:
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
-  beatmch:
+  Doppio:
     type: application
     platform: iOS
     sources:
-      - beatmch
+      - Doppio
     info:
       path: Info.plist
       properties:
-        CFBundleDisplayName: beatmch
+        CFBundleDisplayName: Doppio
         UILaunchScreen: {}
         UIStatusBarHidden: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: agu.beatmch
+        PRODUCT_BUNDLE_IDENTIFIER: agu.doppio
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: 1
         DEVELOPMENT_TEAM: 56BK7T2JG7
