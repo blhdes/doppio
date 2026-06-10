@@ -191,7 +191,7 @@ struct ContentView: View {
                 .foregroundStyle(ink.opacity(0.6))
             // The number grows from its centre, not the baseline. Two layers cooperate:
             //  • A hidden "000.0" template — sized to the widest value — alone defines the slot.
-            //    Its font animates 18↔46 so the row reflows (tight at rest, roomy mid-drag) and
+            //    Its font animates 28↔46 so the row reflows (tight at rest, roomy mid-drag) and
             //    "from"/"BPM" make room. It's the fixed-width slot that keeps content-width changes
             //    (2↔3 digits, the decimal appearing in fine mode) from bumping the labels — and
             //    being hidden, the baseline-anchored way an animated font grows is never seen.
@@ -200,7 +200,7 @@ struct ContentView: View {
             //    down, never a small one scaled up and blurred). Centred in the slot, its own width
             //    changes spread evenly about the middle, so the digits never bump sideways either.
             Text("000.0")
-                .font(.system(size: isDragging ? 46 : 18, weight: .bold, design: .rounded))
+                .font(.system(size: isDragging ? 46 : 28, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .hidden()
                 .overlay {
@@ -211,7 +211,7 @@ struct ContentView: View {
                         .monospacedDigit()
                         .foregroundStyle(isDragging ? accent : ink.opacity(0.9))
                         .fixedSize()
-                        .scaleEffect(isDragging ? 1 : 18.0 / 46.0, anchor: .center)
+                        .scaleEffect(isDragging ? 1 : 28.0 / 46.0, anchor: .center)
                         .contentTransition(isDragging ? .identity : .numericText(value: vm.bpm))
                 }
             Text("BPM")
