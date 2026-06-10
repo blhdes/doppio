@@ -66,10 +66,11 @@ struct ContentView: View {
     /// same coordinates the touches arrive in.
     @State private var containerSize: CGSize = .zero
 
-    /// Opacity of the brief full-screen flash that pulses on each tempo detent; eases back to
-    /// 0 so the screen always returns to normal. The flash uses the theme's own contrary tone
-    /// (`ink` — light on dark themes, dark on light), so it stays in the theme's language.
-    @State private var flashLevel: Double = 0
+    /// Strength of the detent "click" on the capsule around the source number: snaps to 1 on
+    /// each BPM step, then eases back to 0. Slow steps read as discrete blips; a fast swipe
+    /// re-triggers faster than the fade, so the border simply holds bright — an honest speed
+    /// cue instead of a strobe. Lives where the eye already is, never washes the whole screen.
+    @State private var tickPulse: Double = 0
 
     // MARK: Hint visibility
     //
@@ -141,13 +142,6 @@ struct ContentView: View {
         .overlay(alignment: .top) {
             themeNameCard
                 .allowsHitTesting(false)   // a label, not a control
-        }
-        .overlay {
-            // A quick pulse of the theme's contrary tone on each tempo detent — a visible partner to the haptic.
-            ink
-                .opacity(flashLevel)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
         }
         .overlay {
             // The fade cover for shake-to-change-theme. Sits above everything so the swap is
@@ -230,10 +224,13 @@ struct ContentView: View {
             // can't resize or flash as the value changes each tick mid-drag. Neutral glass + a
             // faint accent outline (the mode-pill recipe) — a *tinted* fill rendered as a solid
             // accent blob on the iOS 26.2 SDK and swallowed the number. Fades via opacity.
+            // The border doubles as the detent click: each BPM step snaps it bright and a
+            // touch thicker, easing back between steps (see `tickPulse`).
             Color.clear
                 .frame(width: 260, height: 60)
                 .glassSurface(in: Capsule())
-                .overlay(Capsule().strokeBorder(accent.opacity(0.5), lineWidth: 1))
+                .overlay(Capsule().strokeBorder(accent.opacity(0.5 + 0.5 * tickPulse),
+                                                lineWidth: 1 + tickPulse))
                 .opacity(isDragging ? 1 : 0)
         }
         .zIndex(1)           // stay above the orb's pulse, which draws past its own frame
@@ -387,12 +384,14 @@ struct ContentView: View {
         UserDefaults.standard.set(next.id, forKey: Self.themeKey)
     }
 
-    /// Pulse a brief flash of the theme's contrary tone on a tempo detent, then ease it back
-    /// to nothing. A visible companion to the haptic tick. Off under Reduce Motion.
+    /// Click the capsule border on a tempo detent: snap it to full strength, then ease it
+    /// back to rest. A visible companion to the haptic tick that sits right where you're
+    /// reading the number, instead of flashing the whole screen. Off under Reduce Motion —
+    /// the haptic carries the detent alone.
     private func tickFlash() {
         guard !reduceMotion else { return }
-        flashLevel = 0.30
-        withAnimation(.easeOut(duration: 0.18)) { flashLevel = 0 }
+        tickPulse = 1
+        withAnimation(.easeOut(duration: 0.12)) { tickPulse = 0 }
     }
 
     // MARK: - Beat style
