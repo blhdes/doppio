@@ -92,8 +92,9 @@ extension Theme {
     /// literally appending one more entry here.
     static let all: [Theme] = [
         midnight, voltage, toxic, ocean, aurora, forest,
-        crimson, ember, mono,
-        paper, daylight, bubblegum
+        crimson, ember, espresso, velvet, mono,
+        paper, pearl, sage, citrus, honey, dune,
+        rose, sakura, glacier, daylight, bubblegum
     ]
 
     // MARK: Dark — cool & electric
@@ -104,42 +105,42 @@ extension Theme {
         id: "midnight",
         name: "Midnight",
         half: Palette(
-            accent: Color(red: 0.18, green: 0.62, blue: 0.85),
+            accent: Color(red: 0.32, green: 0.65, blue: 0.92),
             mesh: Palette.sweep(
-                Color(red: 0.04, green: 0.03, blue: 0.12),
-                Color(red: 0.02, green: 0.06, blue: 0.15),
-                Color(red: 0.02, green: 0.11, blue: 0.15)
+                Color(red: 0.03, green: 0.03, blue: 0.11),
+                Color(red: 0.03, green: 0.08, blue: 0.21),
+                Color(red: 0.03, green: 0.15, blue: 0.21)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.95, green: 0.62, blue: 0.20),
+            accent: Color(red: 0.95, green: 0.65, blue: 0.26),
             mesh: Palette.sweep(
-                Color(red: 0.10, green: 0.05, blue: 0.04),
-                Color(red: 0.14, green: 0.08, blue: 0.03),
-                Color(red: 0.17, green: 0.10, blue: 0.03)
+                Color(red: 0.11, green: 0.05, blue: 0.03),
+                Color(red: 0.16, green: 0.09, blue: 0.03),
+                Color(red: 0.21, green: 0.13, blue: 0.04)
             )
         )
     )
 
-    /// FLIP: hue clash — deep sapphire blue against a jewel-peridot acid lime. The two
-    /// sides are meant to *fight*, a hard energetic snap rather than a gentle shift.
+    /// FLIP: hue clash — deep sapphire blue against a jewel-peridot lime. The two sides
+    /// are meant to *fight*, a hard energetic snap rather than a gentle shift.
     static let voltage = Theme(
         id: "voltage",
         name: "Voltage",
         half: Palette(
-            accent: Color(red: 0.22, green: 0.45, blue: 0.98),
+            accent: Color(red: 0.32, green: 0.54, blue: 1.00),
             mesh: Palette.sweep(
-                Color(red: 0.03, green: 0.06, blue: 0.20),
-                Color(red: 0.02, green: 0.09, blue: 0.30),
-                Color(red: 0.05, green: 0.06, blue: 0.24)
+                Color(red: 0.02, green: 0.05, blue: 0.18),
+                Color(red: 0.03, green: 0.10, blue: 0.34),
+                Color(red: 0.06, green: 0.07, blue: 0.27)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.80, green: 0.92, blue: 0.12),
+            accent: Color(red: 0.75, green: 0.89, blue: 0.22),
             mesh: Palette.sweep(
-                Color(red: 0.10, green: 0.14, blue: 0.02),
-                Color(red: 0.15, green: 0.21, blue: 0.03),
-                Color(red: 0.09, green: 0.17, blue: 0.02)
+                Color(red: 0.08, green: 0.12, blue: 0.02),
+                Color(red: 0.14, green: 0.21, blue: 0.03),
+                Color(red: 0.10, green: 0.17, blue: 0.02)
             )
         )
     )
@@ -150,19 +151,19 @@ extension Theme {
         id: "toxic",
         name: "Toxic",
         half: Palette(
-            accent: Color(red: 0.20, green: 0.85, blue: 0.42),
+            accent: Color(red: 0.20, green: 0.84, blue: 0.46),
             mesh: Palette.sweep(
-                Color(red: 0.03, green: 0.14, blue: 0.06),
+                Color(red: 0.02, green: 0.12, blue: 0.05),
                 Color(red: 0.04, green: 0.23, blue: 0.10),
-                Color(red: 0.05, green: 0.18, blue: 0.13)
+                Color(red: 0.04, green: 0.18, blue: 0.13)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.70, green: 0.30, blue: 0.96),
+            accent: Color(red: 0.67, green: 0.36, blue: 0.95),
             mesh: Palette.sweep(
-                Color(red: 0.12, green: 0.03, blue: 0.18),
-                Color(red: 0.18, green: 0.04, blue: 0.27),
-                Color(red: 0.14, green: 0.03, blue: 0.22)
+                Color(red: 0.10, green: 0.03, blue: 0.16),
+                Color(red: 0.17, green: 0.04, blue: 0.27),
+                Color(red: 0.13, green: 0.03, blue: 0.22)
             )
         )
     )
@@ -173,19 +174,19 @@ extension Theme {
         id: "ocean",
         name: "Ocean",
         half: Palette(
-            accent: Color(red: 0.16, green: 0.68, blue: 0.82),
+            accent: Color(red: 0.20, green: 0.70, blue: 0.84),
             mesh: Palette.sweep(
-                Color(red: 0.02, green: 0.06, blue: 0.14),
-                Color(red: 0.03, green: 0.11, blue: 0.22),
-                Color(red: 0.02, green: 0.15, blue: 0.20)
+                Color(red: 0.01, green: 0.05, blue: 0.13),
+                Color(red: 0.02, green: 0.11, blue: 0.23),
+                Color(red: 0.02, green: 0.16, blue: 0.21)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.26, green: 0.88, blue: 0.84),
+            accent: Color(red: 0.30, green: 0.89, blue: 0.85),
             mesh: Palette.sweep(
-                Color(red: 0.02, green: 0.11, blue: 0.18),
-                Color(red: 0.03, green: 0.18, blue: 0.27),
-                Color(red: 0.03, green: 0.23, blue: 0.28)
+                Color(red: 0.02, green: 0.11, blue: 0.19),
+                Color(red: 0.03, green: 0.19, blue: 0.29),
+                Color(red: 0.03, green: 0.24, blue: 0.29)
             )
         )
     )
@@ -196,19 +197,19 @@ extension Theme {
         id: "aurora",
         name: "Aurora",
         half: Palette(
-            accent: Color(red: 0.35, green: 0.90, blue: 0.62),
+            accent: Color(red: 0.38, green: 0.90, blue: 0.64),
             mesh: Palette.sweep(
-                Color(red: 0.01, green: 0.10, blue: 0.07),
-                Color(red: 0.02, green: 0.14, blue: 0.13),
-                Color(red: 0.02, green: 0.10, blue: 0.17)
+                Color(red: 0.01, green: 0.10, blue: 0.06),
+                Color(red: 0.02, green: 0.15, blue: 0.13),
+                Color(red: 0.02, green: 0.10, blue: 0.18)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.66, green: 0.45, blue: 0.98),
+            accent: Color(red: 0.68, green: 0.48, blue: 0.98),
             mesh: Palette.sweep(
-                Color(red: 0.06, green: 0.04, blue: 0.16),
-                Color(red: 0.09, green: 0.05, blue: 0.22),
-                Color(red: 0.12, green: 0.05, blue: 0.21)
+                Color(red: 0.05, green: 0.03, blue: 0.15),
+                Color(red: 0.09, green: 0.05, blue: 0.23),
+                Color(red: 0.13, green: 0.05, blue: 0.22)
             )
         )
     )
@@ -219,19 +220,19 @@ extension Theme {
         id: "forest",
         name: "Forest",
         half: Palette(
-            accent: Color(red: 0.30, green: 0.80, blue: 0.42),
+            accent: Color(red: 0.34, green: 0.80, blue: 0.46),
             mesh: Palette.sweep(
-                Color(red: 0.02, green: 0.08, blue: 0.04),
-                Color(red: 0.03, green: 0.12, blue: 0.06),
-                Color(red: 0.02, green: 0.12, blue: 0.09)
+                Color(red: 0.01, green: 0.07, blue: 0.03),
+                Color(red: 0.03, green: 0.13, blue: 0.06),
+                Color(red: 0.02, green: 0.13, blue: 0.10)
             )
         ),
         double: Palette(
-            accent: Color(red: 0.58, green: 0.85, blue: 0.25),
+            accent: Color(red: 0.60, green: 0.86, blue: 0.30),
             mesh: Palette.sweep(
                 Color(red: 0.05, green: 0.12, blue: 0.04),
-                Color(red: 0.08, green: 0.17, blue: 0.05),
-                Color(red: 0.11, green: 0.18, blue: 0.05)
+                Color(red: 0.08, green: 0.18, blue: 0.05),
+                Color(red: 0.12, green: 0.19, blue: 0.05)
             )
         )
     )
@@ -244,19 +245,19 @@ extension Theme {
         id: "crimson",
         name: "Crimson",
         half: Palette(
-            accent: Color(red: 0.85, green: 0.18, blue: 0.30),
+            accent: Color(red: 0.86, green: 0.20, blue: 0.32),
             mesh: Palette.sweep(
-                Color(red: 0.16, green: 0.02, blue: 0.06),
-                Color(red: 0.22, green: 0.03, blue: 0.08),
-                Color(red: 0.18, green: 0.02, blue: 0.11)
+                Color(red: 0.14, green: 0.01, blue: 0.05),
+                Color(red: 0.23, green: 0.03, blue: 0.08),
+                Color(red: 0.19, green: 0.02, blue: 0.12)
             )
         ),
         double: Palette(
-            accent: Color(red: 1.00, green: 0.28, blue: 0.32),
+            accent: Color(red: 1.00, green: 0.32, blue: 0.36),
             mesh: Palette.sweep(
-                Color(red: 0.26, green: 0.04, blue: 0.10),
-                Color(red: 0.37, green: 0.06, blue: 0.13),
-                Color(red: 0.30, green: 0.04, blue: 0.17)
+                Color(red: 0.25, green: 0.04, blue: 0.10),
+                Color(red: 0.38, green: 0.06, blue: 0.13),
+                Color(red: 0.31, green: 0.04, blue: 0.18)
             )
         )
     )
@@ -267,19 +268,65 @@ extension Theme {
         id: "ember",
         name: "Ember",
         half: Palette(
-            accent: Color(red: 0.92, green: 0.60, blue: 0.28),
+            accent: Color(red: 0.92, green: 0.61, blue: 0.30),
             mesh: Palette.sweep(
-                Color(red: 0.10, green: 0.04, blue: 0.03),
+                Color(red: 0.09, green: 0.03, blue: 0.02),
                 Color(red: 0.16, green: 0.07, blue: 0.03),
-                Color(red: 0.18, green: 0.09, blue: 0.04)
+                Color(red: 0.19, green: 0.10, blue: 0.04)
             )
         ),
         double: Palette(
-            accent: Color(red: 1.00, green: 0.48, blue: 0.18),
+            accent: Color(red: 1.00, green: 0.51, blue: 0.22),
             mesh: Palette.sweep(
                 Color(red: 0.20, green: 0.07, blue: 0.02),
-                Color(red: 0.30, green: 0.11, blue: 0.03),
-                Color(red: 0.34, green: 0.14, blue: 0.04)
+                Color(red: 0.31, green: 0.11, blue: 0.03),
+                Color(red: 0.35, green: 0.15, blue: 0.04)
+            )
+        )
+    )
+
+    /// The house theme — a doppio in a cup. FLIP: brightness lift — a near-black ristretto
+    /// roast that pulls lighter into caramel crema on DOUBLE, like milk hitting the shot.
+    static let espresso = Theme(
+        id: "espresso",
+        name: "Espresso",
+        half: Palette(
+            accent: Color(red: 0.84, green: 0.62, blue: 0.40),
+            mesh: Palette.sweep(
+                Color(red: 0.07, green: 0.04, blue: 0.03),
+                Color(red: 0.11, green: 0.07, blue: 0.05),
+                Color(red: 0.13, green: 0.09, blue: 0.07)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.96, green: 0.84, blue: 0.66),
+            mesh: Palette.sweep(
+                Color(red: 0.14, green: 0.09, blue: 0.05),
+                Color(red: 0.20, green: 0.13, blue: 0.08),
+                Color(red: 0.24, green: 0.17, blue: 0.11)
+            )
+        )
+    )
+
+    /// Theatre curtains. FLIP: warm↔cool — a cool deep-aubergine plum with a dusty orchid
+    /// accent that warms into mulberry wine with rose-mauve. The plush, quiet warm dark.
+    static let velvet = Theme(
+        id: "velvet",
+        name: "Velvet",
+        half: Palette(
+            accent: Color(red: 0.76, green: 0.54, blue: 0.86),
+            mesh: Palette.sweep(
+                Color(red: 0.08, green: 0.03, blue: 0.12),
+                Color(red: 0.12, green: 0.04, blue: 0.18),
+                Color(red: 0.09, green: 0.05, blue: 0.20)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.94, green: 0.50, blue: 0.62),
+            mesh: Palette.sweep(
+                Color(red: 0.14, green: 0.03, blue: 0.10),
+                Color(red: 0.20, green: 0.04, blue: 0.13),
+                Color(red: 0.17, green: 0.05, blue: 0.17)
             )
         )
     )
@@ -334,6 +381,190 @@ extension Theme {
         )
     )
 
+    /// The light twin of Mono. FLIP: warm↔cool — a silvery blue-grey with a graphite accent
+    /// that warms into greige with taupe. Duskier and softer than Paper's bright ivory.
+    static let pearl = Theme(
+        id: "pearl",
+        name: "Pearl",
+        half: Palette(
+            accent: Color(red: 0.20, green: 0.23, blue: 0.28),
+            mesh: Palette.sweep(
+                Color(red: 0.86, green: 0.88, blue: 0.91),
+                Color(red: 0.82, green: 0.85, blue: 0.89),
+                Color(red: 0.87, green: 0.89, blue: 0.92)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.35, green: 0.28, blue: 0.22),
+            mesh: Palette.sweep(
+                Color(red: 0.90, green: 0.88, blue: 0.84),
+                Color(red: 0.87, green: 0.84, blue: 0.80),
+                Color(red: 0.91, green: 0.89, blue: 0.86)
+            )
+        )
+    )
+
+    /// Eucalyptus & pine. FLIP: warm↔cool within green — a cool grey-green wash with a deep
+    /// pine accent that warms into olive tea. The botanical, spa-calm light option.
+    static let sage = Theme(
+        id: "sage",
+        name: "Sage",
+        half: Palette(
+            accent: Color(red: 0.13, green: 0.34, blue: 0.27),
+            mesh: Palette.sweep(
+                Color(red: 0.88, green: 0.92, blue: 0.88),
+                Color(red: 0.84, green: 0.90, blue: 0.86),
+                Color(red: 0.88, green: 0.93, blue: 0.91)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.36, green: 0.38, blue: 0.14),
+            mesh: Palette.sweep(
+                Color(red: 0.92, green: 0.93, blue: 0.84),
+                Color(red: 0.89, green: 0.90, blue: 0.79),
+                Color(red: 0.94, green: 0.94, blue: 0.86)
+            )
+        )
+    )
+
+    /// Zest. FLIP: warm↔cool within citrus — pale lemon with a bronze-ochre accent that
+    /// sharpens into lime with deep leaf green. The fresh, tangy light option.
+    static let citrus = Theme(
+        id: "citrus",
+        name: "Citrus",
+        half: Palette(
+            accent: Color(red: 0.52, green: 0.38, blue: 0.04),
+            mesh: Palette.sweep(
+                Color(red: 0.98, green: 0.98, blue: 0.76),
+                Color(red: 0.96, green: 0.96, blue: 0.66),
+                Color(red: 0.99, green: 0.99, blue: 0.80)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.16, green: 0.42, blue: 0.10),
+            mesh: Palette.sweep(
+                Color(red: 0.90, green: 0.96, blue: 0.74),
+                Color(red: 0.86, green: 0.94, blue: 0.66),
+                Color(red: 0.92, green: 0.97, blue: 0.78)
+            )
+        )
+    )
+
+    /// Warm gold. FLIP: brightness charge — pale honey with an amber-brown accent that
+    /// deepens into apricot marmalade with burnt amber. The committed golden light option.
+    static let honey = Theme(
+        id: "honey",
+        name: "Honey",
+        half: Palette(
+            accent: Color(red: 0.55, green: 0.35, blue: 0.06),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.92, blue: 0.72),
+                Color(red: 1.00, green: 0.88, blue: 0.62),
+                Color(red: 1.00, green: 0.93, blue: 0.76)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.62, green: 0.32, blue: 0.08),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.87, blue: 0.62),
+                Color(red: 0.99, green: 0.82, blue: 0.54),
+                Color(red: 1.00, green: 0.89, blue: 0.66)
+            )
+        )
+    )
+
+    /// Desert sand. FLIP: hue shift — noon sand with a terracotta accent that cools into a
+    /// mauve-violet dusk settling over the dunes. The earthy, sun-baked light option.
+    static let dune = Theme(
+        id: "dune",
+        name: "Dune",
+        half: Palette(
+            accent: Color(red: 0.68, green: 0.34, blue: 0.20),
+            mesh: Palette.sweep(
+                Color(red: 0.96, green: 0.92, blue: 0.84),
+                Color(red: 0.94, green: 0.89, blue: 0.79),
+                Color(red: 0.97, green: 0.93, blue: 0.87)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.44, green: 0.30, blue: 0.52),
+            mesh: Palette.sweep(
+                Color(red: 0.96, green: 0.87, blue: 0.80),
+                Color(red: 0.93, green: 0.85, blue: 0.85),
+                Color(red: 0.91, green: 0.86, blue: 0.93)
+            )
+        )
+    )
+
+    /// A glass of rosé. FLIP: warm lift — pale blush with a deep raspberry accent that pours
+    /// into rose-gold with burnished copper. The refined, celebratory light option.
+    static let rose = Theme(
+        id: "rose",
+        name: "Rosé",
+        half: Palette(
+            accent: Color(red: 0.64, green: 0.18, blue: 0.34),
+            mesh: Palette.sweep(
+                Color(red: 0.99, green: 0.92, blue: 0.93),
+                Color(red: 0.98, green: 0.88, blue: 0.90),
+                Color(red: 0.99, green: 0.93, blue: 0.96)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.70, green: 0.40, blue: 0.28),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.92, blue: 0.86),
+                Color(red: 0.99, green: 0.88, blue: 0.80),
+                Color(red: 1.00, green: 0.93, blue: 0.87)
+            )
+        )
+    )
+
+    /// Cherry blossom. FLIP: hue shift — near-white blossom pink with a deep cherry-plum
+    /// accent that turns over into fresh spring leaf green. Petals, then leaves.
+    static let sakura = Theme(
+        id: "sakura",
+        name: "Sakura",
+        half: Palette(
+            accent: Color(red: 0.55, green: 0.14, blue: 0.30),
+            mesh: Palette.sweep(
+                Color(red: 1.00, green: 0.95, blue: 0.96),
+                Color(red: 0.99, green: 0.92, blue: 0.95),
+                Color(red: 0.98, green: 0.94, blue: 0.98)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.18, green: 0.45, blue: 0.20),
+            mesh: Palette.sweep(
+                Color(red: 0.90, green: 0.96, blue: 0.88),
+                Color(red: 0.86, green: 0.94, blue: 0.84),
+                Color(red: 0.91, green: 0.97, blue: 0.90)
+            )
+        )
+    )
+
+    /// Pack ice. FLIP: brightness charge — frosted mint-white with a deep teal accent that
+    /// saturates into open glacial aqua. The crisp, cold light option.
+    static let glacier = Theme(
+        id: "glacier",
+        name: "Glacier",
+        half: Palette(
+            accent: Color(red: 0.03, green: 0.38, blue: 0.45),
+            mesh: Palette.sweep(
+                Color(red: 0.88, green: 0.95, blue: 0.96),
+                Color(red: 0.84, green: 0.93, blue: 0.94),
+                Color(red: 0.89, green: 0.96, blue: 0.96)
+            )
+        ),
+        double: Palette(
+            accent: Color(red: 0.00, green: 0.42, blue: 0.52),
+            mesh: Palette.sweep(
+                Color(red: 0.80, green: 0.93, blue: 0.94),
+                Color(red: 0.74, green: 0.91, blue: 0.93),
+                Color(red: 0.81, green: 0.95, blue: 0.94)
+            )
+        )
+    )
+
     /// Broad daylight. FLIP: warm↔cool — a pale sky that travels blue → cyan → lavender,
     /// swapping to a warm noon of gold → peach → rose. The high-contrast light option.
     static let daylight = Theme(
@@ -348,7 +579,7 @@ extension Theme {
             )
         ),
         double: Palette(
-            accent: Color(red: 0.92, green: 0.28, blue: 0.20),
+            accent: Color(red: 0.85, green: 0.30, blue: 0.22),
             mesh: Palette.sweep(
                 Color(red: 1.00, green: 0.93, blue: 0.82),
                 Color(red: 1.00, green: 0.90, blue: 0.78),
@@ -363,7 +594,7 @@ extension Theme {
         id: "bubblegum",
         name: "Bubblegum",
         half: Palette(
-            accent: Color(red: 0.55, green: 0.35, blue: 0.92),
+            accent: Color(red: 0.52, green: 0.38, blue: 0.90),
             mesh: Palette.sweep(
                 Color(red: 0.90, green: 0.85, blue: 0.99),
                 Color(red: 0.93, green: 0.86, blue: 0.98),
