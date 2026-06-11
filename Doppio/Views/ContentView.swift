@@ -549,8 +549,10 @@ struct ContentView: View {
     }
 
     /// Which "notch" a BPM sits on: whole numbers normally, tenths in fine mode.
+    /// Floored, not rounded — so the coarse tick fires exactly when the displayed
+    /// integer rolls over (122.9 → 123.0), not at the halfway point (.5).
     private func tickIndex(_ bpm: Double, fine: Bool) -> Int {
-        fine ? Int((bpm * 10).rounded()) : Int(bpm.rounded())
+        fine ? Int((bpm * 10).rounded()) : Int(bpm.rounded(.down))
     }
 
     // MARK: - Pitch bar (absolute)
