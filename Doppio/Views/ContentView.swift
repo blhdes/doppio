@@ -159,22 +159,47 @@ struct ContentView: View {
 
     // MARK: - Subviews
 
-    /// The mode indicator — also the visible cue for the tap-to-flip gesture. No chip, no
-    /// ring: just quiet, wide-tracked type so it reads as a label rather than a control, and
-    /// lives in the same plane as everything else. The word stays dim ink; only the ×2 / ×½
-    /// takes the accent, so the colour is a small pop instead of a whole glowing outline.
+    /// The mode indicator — also the visible cue for the tap-to-flip gesture. Both words sit
+    /// on screen at once so the setting reads as a two-position switch, not a lone caption:
+    /// the live side is big, bold and accent-lit; the idle side small and dim ink. A flip
+    /// just slides the weight across — still no chip or ring, so it stays in the same quiet
+    /// plane as the rest of the screen.
     private var modeIndicator: some View {
-        HStack(spacing: 6) {
-            Text(vm.modeLabel)
-                .font(.subheadline.weight(.medium))
-                .tracking(5)
-                .foregroundStyle(ink.opacity(0.55))
-            Text(vm.isDoubling ? "×2" : "×½")
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(accent)
+        HStack(spacing: 18) {
+            modeWord("HALF", multiplier: "×½", isActive: !vm.isDoubling)
+            modeWord("DOUBLE", multiplier: "×2", isActive: vm.isDoubling)
         }
-        .contentTransition(.opacity)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.3), value: vm.isDoubling)
+    }
+
+    /// One side of the mode switch. The font never changes — the inactive side is the same
+    /// glyphs *scaled down*, so the flip animates smoothly instead of re-laying-out text.
+    /// Both sides sit in identical slots sized by a hidden copy of the *widest* content
+    /// ("DOUBLE ×2"); each word is centred in its slot and scales about that centre, so the
+    /// pair stays perfectly symmetric about the screen's centreline whichever side is live —
+    /// a flip never shifts any ink sideways.
+    private func modeWord(_ word: String, multiplier: String, isActive: Bool) -> some View {
+        modeText("DOUBLE", "×2")
+            .hidden()
+            .overlay {
+                modeText(word, multiplier)
+                    .foregroundStyle(isActive ? accent : ink.opacity(0.3))
+                    .scaleEffect(isActive ? 1 : 0.72, anchor: .center)
+            }
+    }
+
+    /// The raw word + multiplier pair — drawn once as the visible label and once, hidden,
+    /// as the equal-width slot template above.
+    private func modeText(_ word: String, _ multiplier: String) -> some View {
+        HStack(spacing: 6) {
+            Text(word)
+                .font(.title3.weight(.bold))
+                .tracking(4)
+            Text(multiplier)
+                .font(.headline.weight(.semibold))
+                .monospacedDigit()
+        }
+        .fixedSize()
     }
 
     /// The tempo you dialled in — the "from X BPM" half of the relationship.
@@ -187,8 +212,7 @@ struct ContentView: View {
     /// render beyond their frame and would otherwise clip its top.
     private var sourceLine: some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("from")
-                .foregroundStyle(ink.opacity(0.6))
+            sideLabel("from", hugging: .trailing)
             // The number grows from its centre, not the baseline. Two layers cooperate:
             //  • A hidden "000.0" template — sized to the widest value — alone defines the slot.
             //    Its font animates 28↔46 so the row reflows (tight at rest, roomy mid-drag) and
@@ -214,8 +238,7 @@ struct ContentView: View {
                         .scaleEffect(isDragging ? 1 : 28.0 / 46.0, anchor: .center)
                         .contentTransition(isDragging ? .identity : .numericText(value: vm.bpm))
                 }
-            Text("BPM")
-                .foregroundStyle(ink.opacity(0.6))
+            sideLabel("BPM", hugging: .leading)
         }
         .font(.system(size: 18, weight: .medium, design: .rounded))
         .frame(height: 76)   // generous constant band: no orb shift
@@ -237,6 +260,19 @@ struct ContentView: View {
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
 
+    /// "from" and "BPM" each sit in an identical slot sized by the wider of the two words,
+    /// so the number between them lands exactly on the screen's centreline. Each word hugs
+    /// the edge nearest the number (`hugging`), keeping the visible gap to the digits a
+    /// constant 8pt — the slot's spare room falls on the outside, where nothing reads it.
+    private func sideLabel(_ word: String, hugging alignment: Alignment) -> some View {
+        ZStack(alignment: alignment) {
+            Text("from").hidden()
+            Text("BPM").hidden()
+            Text(word)
+                .foregroundStyle(ink.opacity(0.6))
+        }
+    }
+
     /// The transient name of the theme you just shook into. No pill, no outline — just quiet,
     /// dim, lightly-tracked type that speaks the same language as the bottom hint, so it reads
     /// as a passing confirmation rather than a control. Only ever shows for a moment via
@@ -246,6 +282,7 @@ struct ContentView: View {
             .font(.subheadline.weight(.medium))
             .tracking(2)
             .textCase(.uppercase)
+            .padding(.trailing, -2)   // tracking pads after the last glyph too — pull it back so the name centres truly
             .foregroundStyle(ink.opacity(0.6))
             .contentTransition(.opacity)
             .opacity(showThemeName ? 1 : 0)
@@ -268,6 +305,7 @@ struct ContentView: View {
                 Text("Fine-tuning  ·  0.1 BPM steps")
                     .font(.footnote.weight(.bold))
                     .tracking(2)
+                    .padding(.trailing, -2)   // cancel the phantom trailing tracking space — see themeNameCard
                     .foregroundStyle(accent)   // pops so you know slow mode is on
                     .opacity(isFineMode ? 1 : 0)
             }

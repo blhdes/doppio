@@ -43,9 +43,6 @@ final class BPMViewModel {
     /// The number shown big on screen.
     var result: Double { isDoubling ? bpm * 2 : bpm / 2 }
 
-    /// Label describing what `result` represents right now.
-    var modeLabel: String { isDoubling ? "DOUBLE" : "HALF" }
-
     // MARK: Actions
 
     /// Set the BPM, clamped to the allowed range and rounded to one decimal place.
