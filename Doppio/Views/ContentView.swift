@@ -104,7 +104,9 @@ struct ContentView: View {
             TempoMeshBackground(theme: theme, isDoubling: vm.isDoubling, reduceMotion: reduceMotion)
                 .equatable()   // BPM drags don't change it — skip re-layout so it never resizes mid-swipe
 
-            VStack(spacing: 24) {
+            // 44pt of space plus the rings sitting 22pt inside the orb's box ≈ 66pt of real
+            // air between the rings and each label band — the gap reads, even mid-ripple.
+            VStack(spacing: 44) {
                 Spacer(minLength: 0)
                 modeIndicator
                     .frame(height: 76)   // match the "from" row's band so the orb sits dead-centre between them
@@ -208,8 +210,7 @@ struct ContentView: View {
     /// you start swiping it swells, tints to the accent, and lifts onto a faint glass
     /// capsule so the value you're setting is easy to read mid-drag; then it settles back
     /// down when you let go. The row keeps a constant, generous height so the swelling
-    /// number grows in place — and `zIndex` keeps it above the orb's pulsing rings, which
-    /// render beyond their frame and would otherwise clip its top.
+    /// number grows in place.
     private var sourceLine: some View {
         HStack(alignment: .center, spacing: 8) {
             sideLabel("from", hugging: .trailing)
@@ -256,7 +257,6 @@ struct ContentView: View {
                                                 lineWidth: 1 + tickPulse))
                 .opacity(isDragging ? 1 : 0)
         }
-        .zIndex(1)           // stay above the orb's pulse, which draws past its own frame
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isDragging)
     }
 

@@ -48,11 +48,12 @@ struct PulseOrb: View {
     /// rapidly-changing number doesn't flash through dozens of stacked transitions.
     let isAdjusting: Bool
 
-    // Geometry, all measured from the canvas centre. The canvas is a touch larger than the
-    // 320pt layout box so glows and ripples can spill past the rings without being clipped.
-    private let canvasSize: CGFloat = 360
-    private let outerR: CGFloat = 150   // source-tempo radius (fainter)
-    private let innerR: CGFloat = 118   // result-tempo radius (bolder)
+    // Geometry, all measured from the canvas centre. Every glow and ripple stays *inside*
+    // the 320pt layout box, so the breathing room the layout promises around the orb is
+    // real — nothing paints into the gap between the rings and the labels.
+    private let canvasSize: CGFloat = 320
+    private let outerR: CGFloat = 138   // source-tempo radius (fainter)
+    private let innerR: CGFloat = 108   // result-tempo radius (bolder)
 
     // The shared ring language: hairline strokes everywhere, with brightness — not
     // thickness — telling the two rhythms apart. Result reads bolder, source fainter.
@@ -83,7 +84,7 @@ struct PulseOrb: View {
                 .contentTransition(isAdjusting ? .identity : .numericText(value: resultBPM))
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-                .frame(width: 230)
+                .frame(width: 210)   // just inside the inner ring, so digits never touch it
         }
         .frame(width: 320, height: 320)
     }
@@ -206,7 +207,7 @@ struct PulseOrb: View {
     /// pulse of light rather than a hard flash.
     private func ripples(_ ctx: inout GraphicsContext, _ c: CGPoint,
                          _ phase: Double, _ color: Color, strength: Double) {
-        let r0: CGFloat = 70, rMax: CGFloat = 165
+        let r0: CGFloat = 64, rMax: CGFloat = 152   // dies before the layout box edge (160)
         for offset in [0.0, 0.5] {
             let age = (phase + offset).truncatingRemainder(dividingBy: 1)
             let r = r0 + CGFloat(age) * (rMax - r0)
