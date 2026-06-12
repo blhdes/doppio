@@ -176,22 +176,18 @@ struct ContentView: View {
 
     /// One side of the mode switch. The font never changes — the inactive side is the same
     /// glyphs *scaled down*, so the flip animates smoothly instead of re-laying-out text.
-    /// Both sides sit in identical slots sized by a hidden copy of the *widest* content
-    /// ("DOUBLE ×2"); each word is centred in its slot and scales about that centre, so the
-    /// pair stays perfectly symmetric about the screen's centreline whichever side is live —
-    /// a flip never shifts any ink sideways.
+    /// Each word takes its natural width, so the pair centres as one ink block with equal
+    /// air on both sides and an honest 18pt gap. (Equal-width slots sized to "DOUBLE ×2"
+    /// were tried first — they pinned the *gap* to the centreline, but HALF's invisible
+    /// padding made the whole row read pushed toward DOUBLE.) The scale is purely visual,
+    /// so a flip still never reflows the row.
     private func modeWord(_ word: String, multiplier: String, isActive: Bool) -> some View {
-        modeText("DOUBLE", "×2")
-            .hidden()
-            .overlay {
-                modeText(word, multiplier)
-                    .foregroundStyle(isActive ? accent : ink.opacity(0.3))
-                    .scaleEffect(isActive ? 1 : 0.72, anchor: .center)
-            }
+        modeText(word, multiplier)
+            .foregroundStyle(isActive ? accent : ink.opacity(0.3))
+            .scaleEffect(isActive ? 1 : 0.72, anchor: .center)
     }
 
-    /// The raw word + multiplier pair — drawn once as the visible label and once, hidden,
-    /// as the equal-width slot template above.
+    /// The raw word + multiplier pair for one side of the switch.
     private func modeText(_ word: String, _ multiplier: String) -> some View {
         HStack(spacing: 6) {
             Text(word)
