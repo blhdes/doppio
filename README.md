@@ -15,8 +15,8 @@ Named after *doppio movimento*, the score marking for "play twice as fast" — w
 - The big number shows **half** of your source BPM by default; a **single tap** flips to **double** (e.g. for the drop). Tap again to go back.
 - The motion always speaks two rhythms at once — the **result** tempo (bold) and your **source** tempo (faint) — so you can *see* the half/double relationship as two overlapping rates.
 - **Two-finger tap** cycles the beat style; the choice is remembered:
-  - **Orbit** — a glowing dot circles each ring once per beat, a metronome bent into a circle.
-  - **Ripple** — each beat is born at the centre and expands outward as a fading ring.
+  - **Orbit** — a glowing dot circles each ring once per *bar* (a slow metronome hand), its glow ticking brighter on each beat.
+  - **Ripple** — a ring is born at the centre and expands to the edge over a whole *bar*, a slow swell of light.
   - **Sweep** — a bright arc sweeps around each ring once per beat, like radar.
   - **Pulse** *(default)* — two concentric rings breathe in and out on the beat, the inner one glowing.
   - **Bare** — nothing at all, just the number.
