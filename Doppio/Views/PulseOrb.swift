@@ -5,9 +5,11 @@ import SwiftUI
 /// outer=source two-rhythm idea, differing only in how the rhythm is drawn; `bare` strips
 /// all of it away, leaving nothing but the number.
 enum BeatStyle: String, CaseIterable {
-    /// A glowing dot orbits each ring once per beat — a metronome bent into a circle.
+    /// A glowing dot travels around each ring once per bar (four beats) — a slow metronome
+    /// hand — its glow ticking brighter on each beat as it passes.
     case orbit
-    /// Each beat is born at the centre and expands outward as a fading ring.
+    /// A ring is born at the centre and expands to the edge across a whole bar — a slow
+    /// swell of light rather than a per-beat flash.
     case ripple
     /// A bright arc sweeps around each ring once per beat, like a radar.
     case sweep
@@ -131,16 +133,21 @@ struct PulseOrb: View {
 
         switch style {
         case .orbit:
+            // The dot travels once per bar (four beats) — a slow hand — but its glow still
+            // pulses on each beat, so the motion is paused while the tempo stays legible.
             strokeRing(&ctx, c, outerR, accent.opacity(sourceGuide), hairline)
             strokeRing(&ctx, c, innerR, accent.opacity(resultGuide), hairline)
-            orbitDot(&ctx, c, outerR, phase(bpm: sourceBPM, at: t), accent.opacity(sourceLive), dot: 5, glow: 10)
-            orbitDot(&ctx, c, innerR, phase(bpm: resultBPM, at: t), accent, dot: 7, glow: 14)
+            orbitDot(&ctx, c, outerR, barPhase(bpm: sourceBPM, at: t), accent.opacity(sourceLive),
+                     dot: 5, glow: 10, pulse: beat(bpm: sourceBPM, at: t))
+            orbitDot(&ctx, c, innerR, barPhase(bpm: resultBPM, at: t), accent,
+                     dot: 7, glow: 14, pulse: beat(bpm: resultBPM, at: t))
 
         case .ripple:
-            // Honest one-ripple-per-beat at the real tempo; the brightness swells in then
-            // out across the beat (see `ripples`) so fast beats read as a pulse, not a flash.
-            ripples(&ctx, c, phase(bpm: sourceBPM, at: t), accent, strength: 0.40)
-            ripples(&ctx, c, phase(bpm: resultBPM, at: t), accent, strength: 0.85)
+            // One slow swell per bar at the real tempo: a ring born at the centre and
+            // expanding to the edge over four beats, brightening in then out (see `ripples`)
+            // so the expansion reads as a calm wave rather than a flash.
+            ripples(&ctx, c, barPhase(bpm: sourceBPM, at: t), accent, strength: 0.40)
+            ripples(&ctx, c, barPhase(bpm: resultBPM, at: t), accent, strength: 0.85)
 
         case .sweep:
             // One turn per beat at the real tempo. The trail lengthens with speed (honest
@@ -170,12 +177,15 @@ struct PulseOrb: View {
     }
 
     /// A glowing dot sitting at `phase` of the way clockwise around the ring from 12 o'clock.
+    /// `pulse` (0…1, peaking on each beat) swells the glow's size and brightness, so the slow
+    /// once-per-bar travel still ticks visibly with the tempo.
     private func orbitDot(_ ctx: inout GraphicsContext, _ c: CGPoint, _ r: CGFloat,
-                          _ phase: Double, _ color: Color, dot: CGFloat, glow: CGFloat) {
+                          _ phase: Double, _ color: Color, dot: CGFloat, glow: CGFloat, pulse: Double) {
         let p = point(c, r, angle(phase))
-        ctx.fill(circlePath(p, glow),
-                 with: .radialGradient(Gradient(colors: [color.opacity(0.6), .clear]),
-                                       center: p, startRadius: 0, endRadius: glow))
+        let g = glow * (1 + 0.4 * pulse)
+        ctx.fill(circlePath(p, g),
+                 with: .radialGradient(Gradient(colors: [color.opacity(0.35 + 0.45 * pulse), .clear]),
+                                       center: p, startRadius: 0, endRadius: g))
         ctx.fill(circlePath(p, dot / 2), with: .color(color))
     }
 
@@ -201,10 +211,10 @@ struct PulseOrb: View {
         ctx.fill(circlePath(point(c, r, lead), width), with: .color(color))
     }
 
-    /// Two rings per tempo, born at the centre and expanding outward — offset half a beat
+    /// Two rings per tempo, born at the centre and expanding outward — offset half a bar
     /// apart so a ripple is always mid-flight. The brightness swells in then out across the
-    /// beat (a smooth arch) instead of popping in at the centre, so fast tempos read as a
-    /// pulse of light rather than a hard flash.
+    /// bar (a smooth arch) instead of popping in at the centre, so the expansion reads as a
+    /// calm wave of light rather than a hard flash.
     private func ripples(_ ctx: inout GraphicsContext, _ c: CGPoint,
                          _ phase: Double, _ color: Color, strength: Double) {
         let r0: CGFloat = 64, rMax: CGFloat = 152   // dies before the layout box edge (160)
@@ -253,11 +263,22 @@ struct PulseOrb: View {
     }
 
     /// Where we are within the current beat: 0 at the onset, climbing toward 1 just before
-    /// the next. One full turn per beat, locked to the real tempo. Drives the orbiting dot,
-    /// the sweep comet, and the ripples.
+    /// the next. One full turn per beat, locked to the real tempo. Drives the sweep comet.
     private func phase(bpm: Double, at t: TimeInterval) -> Double {
         guard bpm > 0 else { return 0 }
         return (t * bpm / 60).truncatingRemainder(dividingBy: 1)
+    }
+
+    /// Beats in one bar. The app assumes common time (4/4), so the paused motions complete
+    /// one gesture every four beats.
+    private let beatsPerBar = 4.0
+
+    /// Where we are within the current 4/4 bar: 0 at the downbeat, climbing toward 1 just
+    /// before the next. One full turn per bar — four times slower than `phase` — so the orbit
+    /// dot and the ripples read as one calm gesture per bar instead of a flicker per beat.
+    private func barPhase(bpm: Double, at t: TimeInterval) -> Double {
+        guard bpm > 0 else { return 0 }
+        return (t * bpm / 60 / beatsPerBar).truncatingRemainder(dividingBy: 1)
     }
 
     /// Length, in radians, of the sweep comet's trail — the angle its head covers in a fixed
