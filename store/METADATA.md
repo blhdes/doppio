@@ -10,7 +10,7 @@ Fill the two `<<…>>` placeholders before submitting.
 - **Name** `[30]`: `Doppio`
 - **Subtitle** `[30]`: `Half-time & double-time BPM`
   - *Alt (more evocative):* `A living metronome for DJs`
-- **Bundle ID**: `agu.doppio`
+- **Bundle ID**: `app.doppio`
 - **SKU** (internal, your choice): `doppio-ios-001`
 - **Primary language**: English (U.S.)
 - **Primary category**: **Music**

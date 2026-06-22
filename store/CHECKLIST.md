@@ -42,7 +42,7 @@ Follow `store/SCREENSHOTS.md` — capture 5 on your device. (Offer: I can resize
 ## 4. Create the app record 👉 (appstoreconnect.apple.com)
 
 1. **My Apps → + → New App**: Platform iOS, Name **Doppio**, Primary language English (U.S.),
-   Bundle ID **agu.doppio**, SKU `doppio-ios-001`.
+   Bundle ID **app.doppio**, SKU `doppio-ios-001`.
 2. Paste everything from `store/METADATA.md`:
    - Subtitle, promotional text, description, keywords.
    - Support URL, Marketing URL.
@@ -65,6 +65,6 @@ Follow `store/SCREENSHOTS.md` — capture 5 on your device. (Offer: I can resize
 ---
 
 ### Quick reference
-- Bundle ID: `agu.doppio` • Team: `56BK7T2JG7` • Version/build: `1.0 (1)`
+- Bundle ID: `app.doppio` • Team: `56BK7T2JG7` • Version/build: `1.0 (1)`
 - Privacy: Data Not Collected • Category: Music / Utilities • Age: 4+
 - Site: `https://blhdes.github.io/doppio/`

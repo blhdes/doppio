@@ -1,6 +1,6 @@
 name: Doppio
 options:
-  bundleIdPrefix: agu
+  bundleIdPrefix: app
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "18.0"
@@ -27,7 +27,7 @@ targets:
           - UIInterfaceOrientationPortrait
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: agu.doppio
+        PRODUCT_BUNDLE_IDENTIFIER: app.doppio
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: 1
         DEVELOPMENT_TEAM: 56BK7T2JG7
