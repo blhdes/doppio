@@ -21,6 +21,8 @@ targets:
         CFBundleDisplayName: Doppio
         UILaunchScreen: {}
         UIStatusBarHidden: true
+        # No non-exempt encryption — auto-answers the export-compliance question on every upload.
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
     settings:
