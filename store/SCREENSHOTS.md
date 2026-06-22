@@ -38,3 +38,27 @@ Show range — different themes and beat styles, a steady readable number each t
 5. **Range** — a **light** theme (to contrast the dark ones) and a fourth beat style, e.g. **Ripple** or **Bare**.
 
 (Optional: add a short text caption above each in App Store Connect's media editor — but raw screenshots are perfectly acceptable for v1.)
+
+## Caption copy (overlay text)
+
+Helvetica Bold, top of each shot. One idea per screen — 2–4 words, no sentences.
+
+**Mapped to the 5 shots:**
+
+1. Hero → **Half & double. Instant.**
+2. The flip → **One tap. ×2 ↔ ×½.**
+3. A different motion → **Feel every bar.**
+4. Fine-tune → **Down to the decimal.**
+5. Range → **Shake. New look.**
+
+**Spares:**
+
+6. **See the beat.**
+7. **Two rhythms, one number.**
+8. **No account. No ads.**
+9. **No maths mid-mix.**
+10. **Built for the booth.**
+
+### Design notes
+- Same size, weight, y-position on all five — reads as one set.
+- White on dark themes; near-black on the light shot (5). No box, no shadow.
