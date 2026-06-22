@@ -94,31 +94,38 @@ struct PulseOrb: View {
     /// The animated beat drawing — everything that re-renders per frame. Under Reduce
     /// Motion the drawing holds still and two dots blink (opacity only) on each beat,
     /// offset downward so they sit below the number instead of pushing it off-centre.
-    private var motionLayer: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-
-            if reduceMotion {
-                ZStack {
-                    // Motion off: two still guide rings keep the orb's identity.
-                    Circle().strokeBorder(accent.opacity(0.18), lineWidth: hairline).frame(width: outerR * 2)
-                    Circle().strokeBorder(accent.opacity(0.30), lineWidth: hairline).frame(width: innerR * 2)
-                    HStack(spacing: 10) {
-                        Circle().fill(accent)
-                            .frame(width: 8, height: 8)
-                            .opacity(0.2 + 0.8 * beat(bpm: resultBPM, at: t))
-                        Circle().fill(accent.opacity(0.55))
-                            .frame(width: 8, height: 8)
-                            .opacity(0.15 + 0.7 * beat(bpm: sourceBPM, at: t))
-                    }
-                    .offset(y: 76)
-                }
-            } else {
+    @ViewBuilder private var motionLayer: some View {
+        if reduceMotion {
+            reduceMotionLayer
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
                 Canvas { ctx, size in
-                    draw(in: &ctx, size: size, at: t)
+                    draw(in: &ctx, size: size, at: timeline.date.timeIntervalSinceReferenceDate)
                 }
                 .frame(width: canvasSize, height: canvasSize)
                 .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// Motion off: two still guide rings keep the orb's identity while two dots blink (opacity
+    /// only) on each beat. The rings never change, so they sit *outside* the timeline — only
+    /// the blinking dots need the 30fps clock.
+    private var reduceMotionLayer: some View {
+        ZStack {
+            Circle().strokeBorder(accent.opacity(0.18), lineWidth: hairline).frame(width: outerR * 2)
+            Circle().strokeBorder(accent.opacity(0.30), lineWidth: hairline).frame(width: innerR * 2)
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                HStack(spacing: 10) {
+                    Circle().fill(accent)
+                        .frame(width: 8, height: 8)
+                        .opacity(0.2 + 0.8 * beat(bpm: resultBPM, at: t))
+                    Circle().fill(accent.opacity(0.55))
+                        .frame(width: 8, height: 8)
+                        .opacity(0.15 + 0.7 * beat(bpm: sourceBPM, at: t))
+                }
+                .offset(y: 76)
             }
         }
     }
