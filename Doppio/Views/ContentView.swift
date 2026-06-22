@@ -110,6 +110,15 @@ struct ContentView: View {
                 Spacer(minLength: 0)
                 modeIndicator
                     .frame(height: 76)   // match the "from" row's band so the orb sits dead-centre between them
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("Tempo mode")
+                    .accessibilityValue(vm.isDoubling ? "Double" : "Half")
+                    .accessibilityHint("Flips between double-time and half-time")
+                    .accessibilityAction {
+                        withAnimation(.snappy) { vm.toggleMode() }
+                        haptics.toggle()
+                    }
                 PulseOrb(
                     resultBPM: vm.result,
                     sourceBPM: vm.bpm,
@@ -120,7 +129,21 @@ struct ContentView: View {
                     style: beatStyle,
                     isAdjusting: isDragging
                 )
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Tempo")
+                .accessibilityValue("\(Self.format(vm.result)) BPM, \(vm.isDoubling ? "doubled" : "halved") from \(Self.format(vm.bpm)) BPM")
+                .accessibilityAdjustableAction { direction in
+                    switch direction {
+                    case .increment: vm.setBPM(vm.bpm + 1)
+                    case .decrement: vm.setBPM(vm.bpm - 1)
+                    @unknown default: break
+                    }
+                    haptics.tick()
+                }
+                .accessibilityAction(named: "Change beat style") { cycleBeatStyle() }
+                .accessibilityAction(named: "Change theme") { shuffleTheme() }
                 sourceLine
+                    .accessibilityHidden(true)   // its value is already spoken by the Tempo element
                 Spacer(minLength: 0)
             }
             .padding()
@@ -133,6 +156,7 @@ struct ContentView: View {
                 .opacity(isDragging ? 1 : 0.22)   // a faint live readout at rest; a grab target you can drag
                 .animation(.easeOut(duration: 0.25), value: isDragging)
                 .allowsHitTesting(false)          // the shared gesture reads it; this layer never blocks touch
+                .accessibilityHidden(true)        // decorative readout; the Tempo element carries the value
         }
         .overlay(alignment: .bottom) {
             // The hint floats over the bottom rather than sitting in the VStack flow — so when
@@ -140,6 +164,7 @@ struct ContentView: View {
             hint
                 .padding(.horizontal)
                 .allowsHitTesting(false)   // never blocks a swipe that starts near the bottom
+                .accessibilityHidden(true) // teaches finger gestures that don't apply under VoiceOver
         }
         .overlay(alignment: .top) {
             themeNameCard
