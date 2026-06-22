@@ -75,6 +75,23 @@ No account. No network. No ads. No tracking. Nothing leaves your device — your
 The big number stays rock-steady and glanceable in a dark booth, because the one thing a DJ needs at the drop is the number, right now.
 ```
 
+## Description — short alternative `[4000]`
+*(Same pitch, trimmed for skimming — the first two lines carry it.)*
+
+```
+A living metronome for DJs — not a calculator.
+
+See your track's tempo and its half/double partner as two overlapping rhythms. Read the relationship at a glance — no maths mid-mix.
+
+• Swipe to set the BPM
+• Tap to flip ×½ / ×2
+• Second finger = decimal-fine
+• Haptic tick on every beat
+• 5 beat visuals · 12 themes · shake to change
+
+No account. No ads. No tracking. Just the number — rock-steady, glanceable in a dark booth.
+```
+
 ## What's New (version 1.0) `[4000]`
 
 ```
